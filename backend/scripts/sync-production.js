@@ -2,7 +2,7 @@ const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 const fs = require("fs-extra");
 
-const PRODUCTION_API_URL = "https://sleepystudies-api.onrender.com";
+const PRODUCTION_API_URL = process.env.PRODUCTION_API_URL || "https://sleepystudies-api.onrender.com";
 
 async function runSync() {
     const adminKey = process.env.ADMIN_LOGS_KEY;
