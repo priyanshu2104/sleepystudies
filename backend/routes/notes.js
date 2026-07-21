@@ -146,6 +146,10 @@ router.get("/:semester/:subject", async (req, res) => {
     const viewsList = readJSON("views.json");
     const downloadsList = readJSON("downloads.json");
 
+    const protocol = req.headers["x-forwarded-proto"] || "http";
+    const host = req.headers.host;
+    const baseUrl = `${protocol}://${host}`;
+
     const notes = await Promise.all(files.map(async file => {
         const noteSlug = file.replace(".pdf", "");
         const imageDir = path.join(__dirname, "..", "images", semester, subject, noteSlug);
@@ -156,7 +160,7 @@ router.get("/:semester/:subject", async (req, res) => {
                 .filter(f => f.endsWith(".png"))
                 .sort();
             if (imgFiles.length > 0) {
-                thumbnail = `http://localhost:5001/images/${semester}/${subject}/${noteSlug}/${imgFiles[0]}`;
+                thumbnail = `${baseUrl}/images/${semester}/${subject}/${noteSlug}/${imgFiles[0]}`;
             }
         }
 

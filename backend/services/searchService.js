@@ -4,7 +4,7 @@ const { formatNoteTitle } = require("../utils/titleHelper");
 
 const PDF_ROOT = path.join(__dirname, "..", "pdfs");
 
-function searchNotes(query) {
+function searchNotes(query, baseUrl = "http://localhost:5001") {
     const keyword = query.toLowerCase();
     const results = [];
 
@@ -41,7 +41,7 @@ function searchNotes(query) {
                             .filter(f => f.endsWith(".png"))
                             .sort();
                         if (imgFiles.length > 0) {
-                            thumbnail = `http://localhost:5001/images/${semester}/${subject}/${noteSlug}/${imgFiles[0]}`;
+                            thumbnail = `${baseUrl}/images/${semester}/${subject}/${noteSlug}/${imgFiles[0]}`;
                         }
                     }
 

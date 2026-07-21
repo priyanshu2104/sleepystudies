@@ -60,9 +60,13 @@ router.get("/:semester/:folder/:file", async (req, res) => {
                 .sort();
         }
 
+        const protocol = req.headers["x-forwarded-proto"] || "http";
+        const host = req.headers.host;
+        const baseUrl = `${protocol}://${host}`;
+
         const pages = files.map(
             (f) =>
-                `http://localhost:5001/images/${semester}/${folder}/${file.replace(
+                `${baseUrl}/images/${semester}/${folder}/${file.replace(
                     ".pdf",
                     ""
                 )}/${f}`
