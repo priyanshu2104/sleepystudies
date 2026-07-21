@@ -9,6 +9,7 @@ const downloadRoute = require("./routes/download");
 const viewerRoute = require("./routes/viewer");
 const searchRoute = require("./routes/search");
 const uploadRoute = require("./routes/upload");
+const adminRoute = require("./routes/admin");
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use("/notes", notesRoute);
 app.use("/view", viewRoute);
 app.use("/download", downloadRoute);
 app.use("/upload", uploadRoute);
+app.use("/admin", adminRoute);
 
 app.get("/", (req, res) => {
     res.send("SleepyStudies Backend Running");

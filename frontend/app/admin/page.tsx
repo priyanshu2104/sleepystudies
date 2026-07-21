@@ -33,6 +33,15 @@ export default function AdminPage() {
     const [file, setFile] = useState<File | null>(null);
     const [dragActive, setDragActive] = useState(false);
     
+    // Logs dashboard states
+    const [logs, setLogs] = useState<{
+        viewers: any[];
+        views: any[];
+        downloads: any[];
+    } | null>(null);
+    const [logsLoading, setLogsLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState<"views" | "downloads" | "viewers">("views");
+    
     const [loading, setLoading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [status, setStatus] = useState<{
@@ -75,6 +84,65 @@ export default function AdminPage() {
             setSelectedSubject("");
         }
     }, [selectedSemester, semesters]);
+
+    // Fetch activity logs automatically when passcode is typed/saved
+    useEffect(() => {
+        if (!passcode) {
+            setLogs(null);
+            return;
+        }
+
+        async function fetchLogs() {
+            setLogsLoading(true);
+            try {
+                const res = await fetch(`${API_URL}/admin/logs`, {
+                    headers: {
+                        "x-admin-passcode": passcode
+                    }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setLogs(data);
+                } else {
+                    setLogs(null);
+                }
+            } catch (err) {
+                console.error("Failed to load admin logs", err);
+                setLogs(null);
+            } finally {
+                setLogsLoading(false);
+            }
+        }
+
+        const delayDebounceFn = setTimeout(() => {
+            fetchLogs();
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [passcode]);
+
+    function exportLogs() {
+        if (!logs) return;
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `sleepystudies_activity_logs_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function formatDate(dateStr: string) {
+        try {
+            return new Date(dateStr).toLocaleString("en-IN", {
+                timeZone: "Asia/Kolkata",
+                dateStyle: "medium",
+                timeStyle: "short"
+            });
+        } catch {
+            return dateStr;
+        }
+    }
 
     // Drag-and-drop Handlers
     function handleDrag(e: React.DragEvent) {
@@ -527,6 +595,180 @@ export default function AdminPage() {
                     </button>
                 </form>
             </div>
+
+            {/* Logs Dashboard */}
+            {passcode && (
+                <div className="max-w-5xl mx-auto mt-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-xl shadow-slate-100 dark:shadow-none">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+                                <FileText className="text-blue-600" size={24} />
+                                Activity & Viewer Logs
+                            </h2>
+                            <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold mt-1">
+                                Real-time stats of who viewed or downloaded your lecture notes.
+                            </p>
+                        </div>
+                        {logs && (
+                            <button
+                                onClick={exportLogs}
+                                className="shrink-0 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-5 py-3 text-xs font-bold text-slate-700 dark:text-slate-350 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-900 transition duration-200 cursor-pointer"
+                            >
+                                Export Logs to JSON
+                            </button>
+                        )}
+                    </div>
+
+                    {logsLoading ? (
+                        <div className="py-20 text-center text-slate-500 font-semibold flex items-center justify-center gap-2">
+                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                            Loading activity logs...
+                        </div>
+                    ) : !logs ? (
+                        <div className="py-12 text-center text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/10 rounded-2xl border border-amber-200/50 dark:border-amber-900/50 flex flex-col items-center gap-2">
+                            <AlertTriangle size={32} />
+                            <p className="font-bold text-sm">Passcode Verification Required</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm px-4">
+                                Please enter the correct admin passcode in the form above to view visitor logs.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {/* Tab Headers */}
+                            <div className="flex border-b border-slate-100 dark:border-slate-800 gap-6">
+                                <button
+                                    onClick={() => setActiveTab("views")}
+                                    className={`pb-4 text-sm font-bold border-b-2 transition-all cursor-pointer ${
+                                        activeTab === "views"
+                                            ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                                            : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                                    }`}
+                                >
+                                    Views ({logs.views.length})
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("downloads")}
+                                    className={`pb-4 text-sm font-bold border-b-2 transition-all cursor-pointer ${
+                                        activeTab === "downloads"
+                                            ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                                            : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                                    }`}
+                                >
+                                    Downloads ({logs.downloads.length})
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("viewers")}
+                                    className={`pb-4 text-sm font-bold border-b-2 transition-all cursor-pointer ${
+                                        activeTab === "viewers"
+                                            ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                                            : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                                    }`}
+                                >
+                                    Users ({logs.viewers.length})
+                                </button>
+                            </div>
+
+                            {/* Tab Content Tables */}
+                            <div className="overflow-x-auto rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/20">
+                                {activeTab === "views" && (
+                                    <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-350 min-w-[600px]">
+                                        <thead className="bg-slate-100/60 dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-800 text-slate-500">
+                                            <tr>
+                                                <th className="p-4">Name</th>
+                                                <th className="p-4">Subject</th>
+                                                <th className="p-4">Note File</th>
+                                                <th className="p-4">IP Address</th>
+                                                <th className="p-4">Date/Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                            {logs.views.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={5} className="p-8 text-center text-slate-400">
+                                                        No view activities logged yet.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                logs.views.map((v, i) => (
+                                                    <tr key={i} className="hover:bg-slate-100/20 dark:hover:bg-slate-800/10">
+                                                        <td className="p-4 font-bold text-slate-900 dark:text-white">{v.name || "Anonymous"}</td>
+                                                        <td className="p-4">{v.subject}</td>
+                                                        <td className="p-4 truncate max-w-[200px]" title={v.note}>{v.note}</td>
+                                                        <td className="p-4 font-mono text-[10px] text-slate-400">{v.ip || "Unknown"}</td>
+                                                        <td className="p-4 text-slate-400">{formatDate(v.timestamp)}</td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                )}
+
+                                {activeTab === "downloads" && (
+                                    <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-350 min-w-[600px]">
+                                        <thead className="bg-slate-100/60 dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-800 text-slate-500">
+                                            <tr>
+                                                <th className="p-4">Name</th>
+                                                <th className="p-4">Subject</th>
+                                                <th className="p-4">Note File</th>
+                                                <th className="p-4">IP Address</th>
+                                                <th className="p-4">Date/Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                            {logs.downloads.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={5} className="p-8 text-center text-slate-400">
+                                                        No download activities logged yet.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                logs.downloads.map((d, i) => (
+                                                    <tr key={i} className="hover:bg-slate-100/20 dark:hover:bg-slate-800/10">
+                                                        <td className="p-4 font-bold text-slate-900 dark:text-white">{d.name || "Anonymous"}</td>
+                                                        <td className="p-4">{d.subject}</td>
+                                                        <td className="p-4 truncate max-w-[200px]" title={d.note}>{d.note}</td>
+                                                        <td className="p-4 font-mono text-[10px] text-slate-400">{d.ip || "Unknown"}</td>
+                                                        <td className="p-4 text-slate-400">{formatDate(d.timestamp)}</td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                )}
+
+                                {activeTab === "viewers" && (
+                                    <table className="w-full text-left text-xs font-semibold text-slate-700 dark:text-slate-350 min-w-[500px]">
+                                        <thead className="bg-slate-100/60 dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-800 text-slate-500">
+                                            <tr>
+                                                <th className="p-4">Student Name</th>
+                                                <th className="p-4">Viewer ID</th>
+                                                <th className="p-4">Registered Date/Time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                            {logs.viewers.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={3} className="p-8 text-center text-slate-400">
+                                                        No students registered yet.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                logs.viewers.map((viewer, i) => (
+                                                    <tr key={i} className="hover:bg-slate-100/20 dark:hover:bg-slate-800/10">
+                                                        <td className="p-4 font-bold text-slate-900 dark:text-white">{viewer.name}</td>
+                                                        <td className="p-4 font-mono text-slate-400">{viewer.viewerId}</td>
+                                                        <td className="p-4 text-slate-400">{formatDate(viewer.timestamp)}</td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
         </main>
     );
 }
