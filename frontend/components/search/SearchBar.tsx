@@ -117,17 +117,17 @@ export default function SearchBar() {
 
             {/* Search Box */}
 
-            <div className="flex items-center rounded-xl border bg-white shadow">
+            <div className="flex items-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white shadow">
 
                 <Search
-                    className="ml-4 text-gray-500"
+                    className="ml-4 text-slate-500 dark:text-slate-400"
                     size={20}
                 />
 
                 <input
                     value={query}
                     placeholder="Search notes..."
-                    className="w-full px-4 py-4 outline-none"
+                    className="w-full px-4 py-4 outline-none bg-transparent text-slate-900 dark:text-white placeholder:text-slate-400"
                     onFocus={() => setShow(true)}
                     onChange={(e) =>
                         setQuery(e.target.value)
@@ -182,11 +182,11 @@ export default function SearchBar() {
 
             {show && query && (
 
-                <div className="absolute z-50 mt-2 max-h-96 w-full overflow-auto rounded-xl border bg-white shadow-2xl">
+                <div className="absolute z-50 mt-2 max-h-96 w-full overflow-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl text-slate-900 dark:text-white">
 
                     {loading && (
 
-                        <div className="p-5 text-center">
+                        <div className="p-5 text-center text-slate-500 dark:text-slate-400">
 
                             Searching...
 
@@ -196,7 +196,7 @@ export default function SearchBar() {
 
                     {!loading && results.length === 0 && (
 
-                        <div className="p-5 text-center text-gray-500">
+                        <div className="p-5 text-center text-slate-500 dark:text-slate-400">
 
                             No notes found
 
@@ -214,20 +214,20 @@ export default function SearchBar() {
                             className={`flex w-full items-center justify-between px-5 py-4 text-left transition
 
                                 ${index === selected
-                                    ? "bg-blue-50"
-                                    : "hover:bg-gray-100"
+                                    ? "bg-blue-50/70 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                                    : "hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-900 dark:text-white"
                                 }`}
                         >
 
                             <div>
 
-                                <p className="font-medium">
+                                <p className="font-semibold text-slate-900 dark:text-slate-100">
 
                                     {highlight(note.title)}
 
                                 </p>
 
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
 
                                     {note.subject}
 
