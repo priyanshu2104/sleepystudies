@@ -3,6 +3,11 @@ const path = require("path");
 
 function readJSON(file) {
     const filePath = path.join(__dirname, "..", "data", file);
+    const dirPath = path.dirname(filePath);
+
+    if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+    }
 
     if (!fs.existsSync(filePath)) {
         fs.writeFileSync(filePath, "[]");
@@ -13,6 +18,11 @@ function readJSON(file) {
 
 function writeJSON(file, data) {
     const filePath = path.join(__dirname, "..", "data", file);
+    const dirPath = path.dirname(filePath);
+
+    if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+    }
 
     fs.writeFileSync(
         filePath,
