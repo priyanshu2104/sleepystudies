@@ -124,10 +124,10 @@ export default function Hero() {
                 {/* Search Engine Wrapper */}
                 <div
                     ref={wrapperRef}
-                    className="relative mx-auto mt-12 max-w-2xl z-40 px-4"
+                    className="relative mx-auto mt-12 max-w-2xl z-40"
                 >
                     <div className="flex overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-slate-100 dark:shadow-none transition-all duration-300 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10">
-                        <div className="flex items-center pl-4 pr-1">
+                        <div className="flex items-center pl-5 pr-2">
                             <Search size={18} className="text-muted-foreground" />
                         </div>
 
