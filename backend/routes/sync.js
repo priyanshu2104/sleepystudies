@@ -109,4 +109,40 @@ router.get("/file", checkAdminKey, async (req, res) => {
     }
 });
 
+// POST /api/sync/upload
+// Securely uploads/overwrites a file inside the data/ folder (e.g. logs)
+router.post("/upload", checkAdminKey, async (req, res) => {
+    try {
+        const { path: requestedPath, content } = req.body;
+        if (!requestedPath || content === undefined) {
+            return res.status(400).json({ error: "Missing 'path' or 'content' in request body" });
+        }
+
+        const backendRoot = path.resolve(__dirname, "..");
+        const absolutePath = path.resolve(backendRoot, requestedPath);
+
+        // Security check: Must not escape backend root directory
+        if (!absolutePath.startsWith(backendRoot)) {
+            return res.status(403).json({ error: "Access Denied: Path escapes server directory." });
+        }
+
+        // Security check: Must reside strictly inside the data/ folder for uploads
+        const relative = path.relative(backendRoot, absolutePath);
+        const firstSegment = relative.split(path.sep)[0];
+
+        if (firstSegment !== "data") {
+            return res.status(403).json({ error: "Access Denied: You are only allowed to upload/restore files inside the data/ folder." });
+        }
+
+        // Write the file
+        await fs.ensureDir(path.dirname(absolutePath));
+        await fs.writeFile(absolutePath, content, "utf8");
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Failed to upload file:", err);
+        res.status(500).json({ error: "Server error occurred during file upload." });
+    }
+});
+
 module.exports = router;
