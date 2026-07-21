@@ -44,7 +44,7 @@ router.get("/:semester/:folder/:file", async (req, res) => {
 
         pages.forEach((page) => {
             page.drawText(
-                "Downloaded from SleepyStudies | www.sleepystudies.com",
+                "Downloaded from SleepyStudies | sleepystudies.vercel.app",
                 {
                     x: 50,
                     y: 20,

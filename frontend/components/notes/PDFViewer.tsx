@@ -170,7 +170,7 @@ export default function PDFViewer({ pages }: Props) {
                         {Array.from({ length: 16 }).map((_, index) => (
                             <div
                                 key={index}
-                                className="absolute font-semibold text-slate-800/10 pointer-events-none select-none text-center leading-relaxed"
+                                className="absolute font-semibold text-slate-900/15 dark:text-white/15 pointer-events-none select-none text-center leading-relaxed"
                                 style={{
                                     top: `${Math.floor(index / 4) * 25 + 8}%`,
                                     left: `${(index % 4) * 25 + 4}%`,
@@ -179,9 +179,9 @@ export default function PDFViewer({ pages }: Props) {
                                     whiteSpace: "nowrap",
                                 }}
                             >
-                                <div className="font-bold tracking-widest text-[14px] text-white/10">SLEEPYSTUDIES</div>
+                                <div className="font-extrabold tracking-widest text-[13px]">SLEEPYSTUDIES.VERCEL.APP</div>
                                 <div className="uppercase tracking-wider text-[11px] mt-0.5">{viewer?.name || "STUDENT"}</div>
-                                <div className="font-mono text-[9px] opacity-80">{viewer?.viewerId || viewer?.id || "GUEST-ID"}</div>
+                                <div className="font-mono text-[9px] opacity-85">{viewer?.viewerId || viewer?.id || "GUEST-ID"}</div>
                                 <div className="text-[9px] tracking-wide mt-0.5 font-bold">EDUCATIONAL USE ONLY</div>
                                 <div className="text-[9px] opacity-75">
                                     {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
