@@ -110,24 +110,24 @@ export default function Hero() {
                 </div>
 
                 {/* Heading */}
-                <h1 className="mt-10 text-5xl font-black tracking-tight text-slate-900 dark:text-white md:text-7xl lg:text-8xl leading-[1.05] max-w-4xl mx-auto">
+                <h1 className="mt-10 text-4xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white md:text-7xl lg:text-8xl leading-[1.05] max-w-4xl mx-auto px-4">
                     Study <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Smarter.</span>
                     <br />
                     Sleep <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Better.</span>
                 </h1>
 
                 {/* Subtitle */}
-                <p className="mx-auto mt-8 max-w-2xl text-lg md:text-xl text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                <p className="mx-auto mt-8 max-w-2xl text-base sm:text-lg md:text-xl text-slate-500 dark:text-slate-400 font-medium leading-relaxed px-4">
                     Get premium handwritten notes, curated guides, and summaries so you can study efficiently-and actually get some sleep. Completely free.
                 </p>
 
                 {/* Search Engine Wrapper */}
                 <div
                     ref={wrapperRef}
-                    className="relative mx-auto mt-12 max-w-2xl z-40"
+                    className="relative mx-auto mt-12 max-w-2xl z-40 px-4"
                 >
                     <div className="flex overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-slate-100 dark:shadow-none transition-all duration-300 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10">
-                        <div className="flex items-center pl-5 pr-2">
+                        <div className="flex items-center pl-4 pr-1">
                             <Search size={18} className="text-muted-foreground" />
                         </div>
 
@@ -161,8 +161,8 @@ export default function Hero() {
                                     setShow(false);
                                 }
                             }}
-                            placeholder="Type keywords (e.g. java, dbms, arrays)..."
-                            className="flex-1 py-4.5 px-2 outline-none text-foreground placeholder:text-muted-foreground font-medium text-base bg-transparent"
+                            placeholder="Search notes, subjects..."
+                            className="flex-1 py-4 px-2 outline-none text-foreground placeholder:text-muted-foreground font-medium text-sm sm:text-base bg-transparent min-w-0"
                         />
 
                         <button
@@ -171,9 +171,10 @@ export default function Hero() {
                                     openNote(results[selected]);
                                 }
                             }}
-                            className="bg-blue-600 px-8 text-sm font-bold text-white transition-colors duration-200 hover:bg-blue-700 cursor-pointer flex items-center justify-center"
+                            className="bg-blue-600 px-5 sm:px-8 text-sm font-bold text-white transition-colors duration-200 hover:bg-blue-700 cursor-pointer flex items-center justify-center gap-2"
                         >
-                            Search
+                            <span className="hidden sm:inline">Search</span>
+                            <Search className="sm:hidden" size={16} />
                         </button>
                     </div>
 

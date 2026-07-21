@@ -9,6 +9,7 @@ import { useScrollToSubjects } from "@/utils/scrollHelper";
 export default function Navbar() {
     const scrollToSubjects = useScrollToSubjects();
     const [theme, setTheme] = useState<"light" | "dark">("light");
+    const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem("theme");
@@ -52,7 +53,7 @@ export default function Navbar() {
                         <h1 className="text-[17px] font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">
                             SleepyStudies
                         </h1>
-                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">
+                        <p className="hidden sm:block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">
                             Study Smarter, Sleep Better
                         </p>
                     </div>
@@ -98,11 +99,49 @@ export default function Navbar() {
                     </Link>
 
                     {/* Mobile Menu Button */}
-                    <button className="rounded-xl border border-slate-200 dark:border-slate-800 p-2.5 text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white md:hidden cursor-pointer">
+                    <button 
+                        onClick={() => setIsOpen(!isOpen)}
+                        className="rounded-xl border border-slate-200 dark:border-slate-800 p-2.5 text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white md:hidden cursor-pointer"
+                    >
                         <Menu size={20} />
                     </button>
                 </div>
             </div>
+
+            {/* Mobile Dropdown Menu */}
+            {isOpen && (
+                <div className="md:hidden border-t border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 px-6 py-5 flex flex-col gap-4 shadow-lg">
+                    <Link 
+                        href="/" 
+                        onClick={() => setIsOpen(false)}
+                        className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1.5"
+                    >
+                        Home
+                    </Link>
+                    <a
+                        href="/#subjects"
+                        onClick={(e) => {
+                            setIsOpen(false);
+                            scrollToSubjects(e);
+                        }}
+                        className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1.5 cursor-pointer"
+                    >
+                        Subjects
+                    </a>
+                    <Link 
+                        href="/admin" 
+                        onClick={() => setIsOpen(false)}
+                        className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1.5"
+                    >
+                        Upload
+                    </Link>
+                    
+                    {/* Mobile Search Bar */}
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                        <SearchBar />
+                    </div>
+                </div>
+            )}
         </header>
     );
 }
