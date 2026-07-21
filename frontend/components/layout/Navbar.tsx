@@ -24,6 +24,16 @@ export default function Navbar() {
         }
     }, []);
 
+    const handleHomeClick = (e: React.MouseEvent) => {
+        if (window.location.pathname === "/") {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            if (window.location.search) {
+                window.history.pushState({}, "", "/");
+            }
+        }
+    };
+
     const toggleTheme = () => {
         const next = theme === "light" ? "dark" : "light";
         setTheme(next);
@@ -41,6 +51,7 @@ export default function Navbar() {
                 {/* Logo & Brand */}
                 <Link
                     href="/"
+                    onClick={handleHomeClick}
                     className="flex items-center gap-3.5 hover:opacity-90 transition-opacity duration-200"
                 >
                     <div className="rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-2.5 shadow-md shadow-blue-500/10 flex items-center justify-center">
@@ -61,7 +72,11 @@ export default function Navbar() {
 
                 {/* Navigation Links */}
                 <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                    <Link href="/" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                    <Link
+                        href="/"
+                        onClick={handleHomeClick}
+                        className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    >
                         Home
                     </Link>
                     <a
@@ -113,7 +128,10 @@ export default function Navbar() {
                 <div className="md:hidden border-t border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 px-6 py-5 flex flex-col gap-4 shadow-lg">
                     <Link 
                         href="/" 
-                        onClick={() => setIsOpen(false)}
+                        onClick={(e) => {
+                            setIsOpen(false);
+                            handleHomeClick(e);
+                        }}
                         className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1.5"
                     >
                         Home
