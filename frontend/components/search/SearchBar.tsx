@@ -182,7 +182,7 @@ export default function SearchBar() {
 
             {show && query && (
 
-                <div className="absolute z-50 mt-2 max-h-96 w-full overflow-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl text-slate-900 dark:text-white">
+                <div className="absolute z-50 mt-2 max-h-[380px] w-full overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl text-slate-900 dark:text-white custom-scrollbar">
 
                     {loading && (
 
