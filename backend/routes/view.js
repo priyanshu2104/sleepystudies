@@ -87,13 +87,13 @@ router.get("/:semester/:folder/:file", async (req, res) => {
 
 router.post("/record", (req, res) => {
     try {
-        const { viewerId, subject, note } = req.body;
-        const { getViewer } = require("../services/viewerService");
-        const viewer = viewerId ? getViewer(viewerId) : null;
+        const { viewerId, name, subject, note } = req.body;
+        const { ensureViewerExists } = require("../services/viewerService");
+        const viewer = ensureViewerExists(viewerId, name, req);
 
         recordView({
             viewerId: viewerId || null,
-            name: viewer ? viewer.name : null,
+            name: viewer ? viewer.name : name || null,
             subject,
             note,
             ip:

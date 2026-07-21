@@ -10,14 +10,14 @@ const router = express.Router();
 router.get("/:semester/:folder/:file", async (req, res) => {
     try {
         const { semester, folder, file } = req.params;
-        const { viewerId } = req.query;
+        const { viewerId, name } = req.query;
 
-        const { getViewer } = require("../services/viewerService");
-        const viewer = viewerId ? getViewer(viewerId) : null;
+        const { ensureViewerExists } = require("../services/viewerService");
+        const viewer = ensureViewerExists(viewerId, name, req);
 
         recordDownload({
             viewerId: viewerId || null,
-            name: viewer ? viewer.name : null,
+            name: viewer ? viewer.name : name || null,
             semester,
             subject: folder,
             note: file,

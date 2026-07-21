@@ -23,8 +23,8 @@ export default function DownloadButton({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const triggerDownload = (viewerId: string) => {
-        window.location.href = `${API_URL}/download/${semester}/${subject}/${file}?viewerId=${viewerId}`;
+    const triggerDownload = (viewerId: string, name: string) => {
+        window.location.href = `${API_URL}/download/${semester}/${subject}/${file}?viewerId=${viewerId}&name=${encodeURIComponent(name)}`;
     };
 
     const handleDownloadClick = (e: React.MouseEvent) => {
@@ -34,7 +34,7 @@ export default function DownloadButton({
             try {
                 const viewer = JSON.parse(stored);
                 if (viewer.viewerId || viewer.id) {
-                    triggerDownload(viewer.viewerId || viewer.id);
+                    triggerDownload(viewer.viewerId || viewer.id, viewer.name || "STUDENT");
                     return;
                 }
             } catch (err) {
@@ -75,7 +75,7 @@ export default function DownloadButton({
 
             localStorage.setItem("viewer", JSON.stringify(viewer));
             setShowModal(false);
-            triggerDownload(viewer.viewerId);
+            triggerDownload(viewer.viewerId, viewer.name);
         } catch (err) {
             console.error("Download gate registration error:", err);
             // Local fallback in case backend is offline
@@ -88,7 +88,7 @@ export default function DownloadButton({
             };
             localStorage.setItem("viewer", JSON.stringify(viewer));
             setShowModal(false);
-            triggerDownload(fallbackId);
+            triggerDownload(fallbackId, name.trim());
         } finally {
             setLoading(false);
         }

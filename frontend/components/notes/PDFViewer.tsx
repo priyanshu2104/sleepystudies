@@ -55,6 +55,7 @@ export default function PDFViewer({ pages }: Props) {
             },
             body: JSON.stringify({
                 viewerId: viewer.viewerId || viewer.id,
+                name: viewer.name,
                 subject: subjectSlug,
                 note: decodeURIComponent(fileSlug),
             }),
