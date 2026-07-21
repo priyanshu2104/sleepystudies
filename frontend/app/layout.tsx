@@ -15,8 +15,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SleepyStudies",
-  description: "Free Notes Repository",
+  title: {
+    default: "SleepyStudies | Free Computer Science Notes Repository",
+    template: "%s | SleepyStudies",
+  },
+  description: "Free, high-quality handwritten lecture notes, slides, and study guides for Computer Science students.",
+  keywords: ["Computer Science", "Lecture Notes", "Engineering Notes", "SleepyStudies", "University Notes", "PDF Notes"],
+  openGraph: {
+    title: "SleepyStudies | Free Computer Science Notes Repository",
+    description: "Study Smarter, Sleep Better. Free high-quality university notes and guides.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

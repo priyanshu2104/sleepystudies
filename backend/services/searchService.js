@@ -30,9 +30,13 @@ function searchNotes(query, baseUrl = "http://localhost:5001") {
                 const noteSlug = file.replace(".pdf", "");
                 const title = formatNoteTitle(file);
 
+                const semTitle = semester.replace(/-/g, " ").toLowerCase();
+                const subjTitle = subject.replace(/-/g, " ").toLowerCase();
+
                 if (
                     title.toLowerCase().includes(keyword) ||
-                    subject.toLowerCase().includes(keyword)
+                    subjTitle.includes(keyword) ||
+                    semTitle.includes(keyword)
                 ) {
                     const imageDir = path.join(PDF_ROOT, "..", "images", semester, subject, noteSlug);
                     let thumbnail = null;
