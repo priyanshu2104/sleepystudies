@@ -40,16 +40,41 @@ router.get("/:semester/:folder/:file", async (req, res) => {
 
         const pdfDoc = await PDFDocument.load(decryptedBytes, { ignoreEncryption: true });
 
-        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const { degrees } = require("pdf-lib");
+        const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
         const pages = pdfDoc.getPages();
 
+        const studentName = (viewer && viewer.name) ? viewer.name : (name || "Student");
+        const studentId = viewerId ? ` (ID: ${viewerId})` : "";
+        const watermarkText = `SleepyStudies • ${studentName}${studentId}`;
+
+        // Option 4: Tiled Grid Pattern Watermark across every page
         pages.forEach((page) => {
+            const { width, height } = page.getSize();
+            
+            const xRatios = [0.15, 0.50, 0.85];
+            const yRatios = [0.20, 0.50, 0.80];
+
+            xRatios.forEach((xRatio) => {
+                yRatios.forEach((yRatio) => {
+                    page.drawText(watermarkText, {
+                        x: width * xRatio - 75,
+                        y: height * yRatio,
+                        size: 9,
+                        font,
+                        color: rgb(0.82, 0.82, 0.85),
+                        rotate: degrees(-20),
+                    });
+                });
+            });
+
+            // Footer identity stamp
             page.drawText(
-                "Downloaded from SleepyStudies | sleepystudies.vercel.app",
+                `Licensed To: ${studentName}${studentId} • SleepyStudies • sleepystudies.vercel.app`,
                 {
-                    x: 50,
-                    y: 20,
-                    size: 10,
+                    x: 30,
+                    y: 15,
+                    size: 8,
                     font,
                     color: rgb(0.5, 0.5, 0.5),
                 }

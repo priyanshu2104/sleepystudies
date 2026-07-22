@@ -1,18 +1,19 @@
 {
-  "baseViews": 30,
-  "baseDownloads": 23,
+  "baseViews": 40,
+  "baseDownloads": 24,
   "fileViews": {
-    "semester-5/software-engineering/book.pdf": 12,
-    "semester-5/compiler-design/module-i.pdf": 11,
+    "semester-5/software-engineering/book.pdf": 13,
+    "semester-5/compiler-design/module-i.pdf": 15,
     "semester-5/data-mining-concepts-and-techniques/module-i.pdf": 3,
     "semester-5/data-communication-and-computer-networks/module-i.pdf": 3,
-    "semester-5/artificial-intelligence/module-i.pdf": 1
+    "semester-5/artificial-intelligence/module-i.pdf": 6
   },
   "fileDownloads": {
     "semester-5/software-engineering/book.pdf": 8,
     "semester-5/compiler-design/module-i.pdf": 5,
     "semester-5/data-communication-and-computer-networks/module-i.pdf": 7,
     "semester-5/data-mining-concepts-and-techniques/module-ii.pdf": 2,
-    "semester-5/data-mining-concepts-and-techniques/module-i.pdf": 1
+    "semester-5/data-mining-concepts-and-techniques/module-i.pdf": 1,
+    "semester-5/artificial-intelligence/module-i.pdf": 1
   }
 }
