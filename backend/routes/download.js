@@ -43,17 +43,29 @@ router.get("/:semester/:folder/:file", async (req, res) => {
         const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
         const pages = pdfDoc.getPages();
 
-        const studentName = viewer ? viewer.name : (name || "Guest Student");
+        const rawName = viewer ? viewer.name : (name || "Guest Student");
+        const studentName = rawName.length > 25 ? rawName.substring(0, 22) + "..." : rawName;
         const studentId = viewerId || (viewer ? viewer.id : "ANON");
         const dateStr = new Date().toISOString().split("T")[0];
 
         const watermarkText = `Downloaded by: ${studentName} (ID: ${studentId}) | Date: ${dateStr} | SleepyStudies • https://sleepystudies.vercel.app`;
 
         pages.forEach((page) => {
+            const { width } = page.getSize();
+            const maxWidth = width - 60; // 30px left & right margins
+
+            let fontSize = 10.5;
+            let textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
+
+            while (textWidth > maxWidth && fontSize > 6.5) {
+                fontSize -= 0.5;
+                textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
+            }
+
             page.drawText(watermarkText, {
                 x: 30,
                 y: 20,
-                size: 10.5,
+                size: fontSize,
                 font,
                 color: rgb(0.35, 0.35, 0.35),
             });

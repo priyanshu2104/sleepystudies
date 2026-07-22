@@ -181,7 +181,11 @@ export default function PDFViewer({ pages }: Props) {
                                 }}
                             >
                                 <div className="font-extrabold tracking-widest text-[13px] text-slate-900/30">SLEEPYSTUDIES.VERCEL.APP</div>
-                                <div className="uppercase tracking-wider text-[11px] mt-0.5 font-bold text-slate-900/30">{viewer?.name || "STUDENT"}</div>
+                                <div className="uppercase tracking-wider text-[11px] mt-0.5 font-bold text-slate-900/30">
+                                    {viewer?.name 
+                                        ? (viewer.name.length > 20 ? `${viewer.name.substring(0, 18)}...` : viewer.name)
+                                        : "STUDENT"}
+                                </div>
                                 <div className="font-mono text-[9px] text-slate-900/25">{viewer?.viewerId || viewer?.id || "GUEST-ID"}</div>
                                 <div className="text-[9px] tracking-wide mt-0.5 font-bold text-slate-900/25">EDUCATIONAL USE ONLY</div>
                                 <div className="text-[9px] text-slate-900/20">
