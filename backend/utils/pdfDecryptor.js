@@ -26,8 +26,17 @@ sys.stdout.buffer.write(out.getvalue())`;
             return buffer;
         }
     } catch (err) {
-        console.error("Python pdf decryption failed, falling back to direct read:", err.message);
+        console.error("Python pdf decryption failed:", err.message);
     }
+
+    try {
+        const qpdfBuffer = execSync(`qpdf --decrypt --password="${password}" "${pdfPath}" -`, {
+            maxBuffer: 100 * 1024 * 1024,
+        });
+        if (qpdfBuffer && qpdfBuffer.length > 100) {
+            return qpdfBuffer;
+        }
+    } catch (err) {}
 
     return fs.readFileSync(pdfPath);
 }
