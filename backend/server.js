@@ -23,7 +23,12 @@ const { decryptImageBuffer } = require("./utils/imageCrypto");
 app.use("/images", (req, res, next) => {
     try {
         const decodedPath = decodeURIComponent(req.path);
-        const requestedPath = path.join(__dirname, "images", decodedPath);
+        let requestedPath = path.join(__dirname, "images", decodedPath);
+        
+        if (!fs.existsSync(requestedPath)) {
+            requestedPath = path.join(process.cwd(), "images", decodedPath);
+        }
+
         if (fs.existsSync(requestedPath) && fs.statSync(requestedPath).isFile()) {
             const rawBytes = fs.readFileSync(requestedPath);
             const decryptedBytes = decryptImageBuffer(rawBytes);
@@ -33,7 +38,7 @@ app.use("/images", (req, res, next) => {
     } catch (e) {
         console.error("Failed to serve image:", e.message);
     }
-    res.status(404).send("Image not found");
+    next();
 });
 
 // Serve original PDFs (optional, useful for testing)
