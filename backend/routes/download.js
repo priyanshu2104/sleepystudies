@@ -34,19 +34,16 @@ router.get("/:semester/:folder/:file", async (req, res) => {
             file
         );
 
-        const existingPdf = fs.readFileSync(pdfPath);
-        const sourcePdfDoc = await PDFDocument.load(existingPdf, { ignoreEncryption: true });
+        const { getDecryptedPdfBytes } = require("../utils/pdfDecryptor");
+        const password = process.env.PDF_SECRET_PASSWORD || "SleepyStudiesSecurityPass2026";
+        const decryptedBytes = getDecryptedPdfBytes(pdfPath, password);
 
-        // Create a brand-new clean, unencrypted document
-        const pdfDoc = await PDFDocument.create();
-
-        // Copy all pages from original document into new document
-        const pageIndices = sourcePdfDoc.getPageIndices();
-        const copiedPages = await pdfDoc.copyPages(sourcePdfDoc, pageIndices);
+        const pdfDoc = await PDFDocument.load(decryptedBytes, { ignoreEncryption: true });
 
         const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const pages = pdfDoc.getPages();
 
-        copiedPages.forEach((page) => {
+        pages.forEach((page) => {
             page.drawText(
                 "Downloaded from SleepyStudies | sleepystudies.vercel.app",
                 {
@@ -57,7 +54,6 @@ router.get("/:semester/:folder/:file", async (req, res) => {
                     color: rgb(0.5, 0.5, 0.5),
                 }
             );
-            pdfDoc.addPage(page);
         });
 
         const pdfBytes = await pdfDoc.save();
