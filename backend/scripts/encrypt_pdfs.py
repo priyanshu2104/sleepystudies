@@ -18,9 +18,13 @@ for root, dirs, files in os.walk(PDF_ROOT):
             filePath = os.path.join(root, file)
             try:
                 reader = PdfReader(filePath)
-                writer = PdfWriter()
+                if reader.is_encrypted:
+                    try:
+                        reader.decrypt(PASSWORD)
+                    except Exception:
+                        pass
 
-                # Transfer pages
+                writer = PdfWriter()
                 for page in reader.pages:
                     writer.add_page(page)
 
