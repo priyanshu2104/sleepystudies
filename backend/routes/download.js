@@ -52,10 +52,10 @@ router.get("/:semester/:folder/:file", async (req, res) => {
         pages.forEach((page) => {
             page.drawText(watermarkText, {
                 x: 30,
-                y: 18,
-                size: 8.5,
+                y: 20,
+                size: 10.5,
                 font,
-                color: rgb(0.45, 0.45, 0.45),
+                color: rgb(0.35, 0.35, 0.35),
             });
         });
 
