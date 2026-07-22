@@ -82,6 +82,18 @@ router.get("/overall-stats", async (req, res) => {
         const viewsCount = readJSON("views.json").length;
         const downloadsCount = readJSON("downloads.json").length;
 
+        // Load non-sensitive public baseline stats for Render restarts
+        let baseViews = 0;
+        let baseDownloads = 0;
+        const baselinePath = path.join(__dirname, "..", "config", "baseline.json");
+        if (await fs.pathExists(baselinePath)) {
+            try {
+                const baseline = await fs.readJson(baselinePath);
+                baseViews = baseline.baseViews || 0;
+                baseDownloads = baseline.baseDownloads || 0;
+            } catch (e) {}
+        }
+
         let totalSubjects = 0;
         let totalNotes = 0;
 
@@ -112,8 +124,8 @@ router.get("/overall-stats", async (req, res) => {
         res.json({
             subjects: totalSubjects,
             notes: totalNotes,
-            views: viewsCount,
-            downloads: downloadsCount,
+            views: baseViews + viewsCount,
+            downloads: baseDownloads + downloadsCount,
         });
     } catch (err) {
         console.error("Failed to compute stats:", err);

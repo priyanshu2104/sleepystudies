@@ -124,8 +124,17 @@ async function runSync() {
             }
         }
 
+        // Update baseline stats checkpoint
+        const { readJSON } = require("../utils/file");
+        const totalViews = readJSON("views.json").length;
+        const totalDownloads = readJSON("downloads.json").length;
+        const baselinePath = path.join(backendRoot, "config", "baseline.json");
+        await fs.ensureDir(path.dirname(baselinePath));
+        await fs.writeJson(baselinePath, { baseViews: totalViews, baseDownloads: totalDownloads }, { spaces: 2 });
+
         console.log("\n\x1b[32m[SUCCESS] Synchronization complete!\x1b[0m");
         console.log(`✨ Status Summary:`);
+        console.log(`   - Baseline stats checkpoint:   ${totalViews} Views / ${totalDownloads} Downloads`);
         console.log(`   - Files downloaded / updated: ${downloadCount}`);
         console.log(`   - Files uploaded / restored:   ${uploadCount}`);
         console.log(`   - Files already up-to-date:    ${skipCount}`);
