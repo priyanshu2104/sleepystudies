@@ -58,6 +58,18 @@ router.get("/:semester/:folder/:file", async (req, res) => {
                 );
             });
 
+            // Encrypt generated page images with AES-256 before storing to disk
+            const { encryptImageBuffer } = require("../utils/imageCrypto");
+            const generatedFiles = await fs.readdir(imageDir);
+            for (const f of generatedFiles) {
+                if (f.endsWith(".png")) {
+                    const p = path.join(imageDir, f);
+                    const raw = await fs.readFile(p);
+                    const enc = encryptImageBuffer(raw);
+                    await fs.writeFile(p, enc);
+                }
+            }
+
             files = (await fs.readdir(imageDir))
                 .filter((f) => f.endsWith(".png"))
                 .sort();

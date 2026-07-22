@@ -17,11 +17,23 @@ app.use(express.json());
 app.use("/viewer", viewerRoute);
 app.use("/search", searchRoute);
 
-// Serve generated images
-app.use(
-    "/images",
-    express.static(path.join(__dirname, "images"))
-);
+const { decryptImageBuffer } = require("./utils/imageCrypto");
+
+// Serve generated images (Auto-decrypted for website viewers)
+app.use("/images", (req, res, next) => {
+    const requestedPath = path.join(__dirname, "images", req.path);
+    if (fs.existsSync(requestedPath) && fs.statSync(requestedPath).isFile()) {
+        try {
+            const rawBytes = fs.readFileSync(requestedPath);
+            const decryptedBytes = decryptImageBuffer(rawBytes);
+            res.type("image/png").send(decryptedBytes);
+            return;
+        } catch (e) {
+            console.error("Failed to decrypt served image:", e.message);
+        }
+    }
+    next();
+});
 
 // Serve original PDFs (optional, useful for testing)
 app.use(
