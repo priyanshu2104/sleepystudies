@@ -42,85 +42,94 @@ async function runSync() {
         for (const item of serverFiles) {
             const localPath = path.join(backendRoot, item.path);
             const isDataFile = item.path.startsWith("data/");
-            
-            let action = "skip"; // "download", "upload", "skip"
-
             if (isDataFile) {
-                if (!(await fs.pathExists(localPath))) {
-                    action = "download";
-                } else {
-                    const stat = await fs.stat(localPath);
-                    if (stat.size < item.size) {
-                        action = "download";
-                    } else if (stat.size > item.size) {
-                        action = "upload";
-                    }
-                }
-            } else {
-                // Non-data files (PDFs, images) are download-only (from production server to local)
-                if (!(await fs.pathExists(localPath))) {
-                    action = "download";
-                } else {
-                    const stat = await fs.stat(localPath);
-                    if (stat.size !== item.size) {
-                        action = "download";
-                    }
-                }
-            }
-
-            if (action === "download") {
-                console.log(`📥 Downloading: ${item.path} (${(item.size / 1024).toFixed(1)} KB)...`);
+                console.log(`🔄 Syncing & Merging: ${item.path}...`);
                 
                 const fileRes = await fetch(
                     `${PRODUCTION_API_URL}/api/sync/file?path=${encodeURIComponent(item.path)}`,
-                    {
-                        headers: {
-                            "x-admin-token": adminKey,
-                        },
-                    }
+                    { headers: { "x-admin-token": adminKey } }
                 );
 
-                if (!fileRes.ok) {
-                    throw new Error(`Failed to download ${item.path}: HTTP ${fileRes.status}`);
+                let serverJson = [];
+                if (fileRes.ok) {
+                    serverJson = await fileRes.json().catch(() => []);
                 }
 
-                const arrayBuffer = await fileRes.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
+                let localJson = [];
+                if (await fs.pathExists(localPath)) {
+                    try {
+                        localJson = await fs.readJson(localPath);
+                    } catch (e) {}
+                }
 
-                // Ensure parent directory exists
-                await fs.ensureDir(path.dirname(localPath));
-                await fs.writeFile(localPath, buffer);
-
-                // Update local modification time to match server's
-                const serverTime = new Date(item.mtime);
-                await fs.utimes(localPath, serverTime, serverTime);
-
-                downloadCount++;
-            } else if (action === "upload") {
-                console.log(`📤 Restoring/Uploading: ${item.path} (${((await fs.stat(localPath)).size / 1024).toFixed(1)} KB)...`);
-                
-                const localContent = await fs.readFile(localPath, "utf8");
-
-                const uploadRes = await fetch(`${PRODUCTION_API_URL}/api/sync/upload`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-admin-token": adminKey,
-                    },
-                    body: JSON.stringify({
-                        path: item.path,
-                        content: localContent,
-                    }),
+                const map = new Map();
+                [...localJson, ...serverJson].forEach(entry => {
+                    const key = entry.id || JSON.stringify(entry);
+                    if (!map.has(key)) {
+                        map.set(key, entry);
+                    }
                 });
 
-                if (!uploadRes.ok) {
-                    const errData = await uploadRes.json().catch(() => ({}));
-                    throw new Error(`Failed to upload ${item.path}: ${errData.error || uploadRes.status}`);
+                const merged = Array.from(map.values());
+
+                await fs.ensureDir(path.dirname(localPath));
+                await fs.writeJson(localPath, merged, { spaces: 2 });
+
+                if (merged.length > serverJson.length) {
+                    await fetch(`${PRODUCTION_API_URL}/api/sync/upload`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "x-admin-token": adminKey,
+                        },
+                        body: JSON.stringify({
+                            path: item.path,
+                            content: JSON.stringify(merged, null, 2),
+                        }),
+                    });
+                    uploadCount++;
+                } else if (merged.length > localJson.length) {
+                    downloadCount++;
+                } else {
+                    skipCount++;
+                }
+            } else {
+                // Non-data files (PDFs, images) are download-only (from production server to local)
+                let shouldDownload = false;
+                if (!(await fs.pathExists(localPath))) {
+                    shouldDownload = true;
+                } else {
+                    const stat = await fs.stat(localPath);
+                    if (stat.size !== item.size) {
+                        shouldDownload = true;
+                    }
                 }
 
-                uploadCount++;
-            } else {
-                skipCount++;
+                if (shouldDownload) {
+                    console.log(`📥 Downloading asset: ${item.path} (${(item.size / 1024).toFixed(1)} KB)...`);
+                    
+                    const fileRes = await fetch(
+                        `${PRODUCTION_API_URL}/api/sync/file?path=${encodeURIComponent(item.path)}`,
+                        { headers: { "x-admin-token": adminKey } }
+                    );
+
+                    if (!fileRes.ok) {
+                        throw new Error(`Failed to download ${item.path}: HTTP ${fileRes.status}`);
+                    }
+
+                    const arrayBuffer = await fileRes.arrayBuffer();
+                    const buffer = Buffer.from(arrayBuffer);
+
+                    await fs.ensureDir(path.dirname(localPath));
+                    await fs.writeFile(localPath, buffer);
+
+                    const serverTime = new Date(item.mtime);
+                    await fs.utimes(localPath, serverTime, serverTime);
+
+                    downloadCount++;
+                } else {
+                    skipCount++;
+                }
             }
         }
 
