@@ -21,19 +21,25 @@ const { decryptImageBuffer } = require("./utils/imageCrypto");
 
 // Serve generated images (Auto-decrypted for website viewers)
 app.use("/images", (req, res, next) => {
-    const requestedPath = path.join(__dirname, "images", req.path);
-    if (fs.existsSync(requestedPath) && fs.statSync(requestedPath).isFile()) {
-        try {
-            const rawBytes = fs.readFileSync(requestedPath);
-            const decryptedBytes = decryptImageBuffer(rawBytes);
-            res.type("image/png").send(decryptedBytes);
-            return;
-        } catch (e) {
-            console.error("Failed to decrypt served image:", e.message);
+    try {
+        const decodedPath = decodeURIComponent(req.path);
+        const requestedPath = path.join(__dirname, "images", decodedPath);
+        if (fs.existsSync(requestedPath)) {
+            const stat = fs.statSync(requestedPath);
+            if (stat.isFile()) {
+                const rawBytes = fs.readFileSync(requestedPath);
+                const decryptedBytes = decryptImageBuffer(rawBytes);
+                res.type("image/png").send(decryptedBytes);
+                return;
+            }
         }
+    } catch (e) {
+        console.error("Failed to serve image:", e.message);
     }
     next();
 });
+
+app.use("/images", express.static(path.join(__dirname, "images")));
 
 // Serve original PDFs (optional, useful for testing)
 app.use(
