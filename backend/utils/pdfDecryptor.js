@@ -1,7 +1,39 @@
 const { execSync } = require("child_process");
 const fs = require("fs");
+const path = require("path");
 
 function getDecryptedPdfBytes(pdfPath, password = "SleepyStudiesSecurityPass2026") {
+    // 1. Try pdftocairo (Native Poppler C++ binary on Linux/Render)
+    try {
+        const tempDir = path.join(__dirname, "..", "temp_uploads");
+        fs.mkdirSync(tempDir, { recursive: true });
+        const tempOut = path.join(tempDir, `dec_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.pdf`);
+        
+        execSync(`pdftocairo -upw "${password}" -pdf "${pdfPath}" "${tempOut}"`, { timeout: 10000 });
+        
+        if (fs.existsSync(tempOut)) {
+            const bytes = fs.readFileSync(tempOut);
+            fs.unlinkSync(tempOut); // Clean up temp file
+            if (bytes && bytes.length > 100) {
+                return bytes;
+            }
+        }
+    } catch (err) {
+        console.error("pdftocairo decryption failed, trying fallbacks:", err.message);
+    }
+
+    // 2. Try qpdf
+    try {
+        const qpdfBuffer = execSync(`qpdf --decrypt --password="${password}" "${pdfPath}" -`, {
+            maxBuffer: 100 * 1024 * 1024,
+            timeout: 10000
+        });
+        if (qpdfBuffer && qpdfBuffer.length > 100) {
+            return qpdfBuffer;
+        }
+    } catch (err) {}
+
+    // 3. Try Python pypdf
     try {
         const pyCmd = `import sys, io
 from pypdf import PdfReader, PdfWriter
@@ -19,25 +51,16 @@ writer.write(out)
 sys.stdout.buffer.write(out.getvalue())`;
 
         const buffer = execSync(`python3 -c "${pyCmd.replace(/"/g, '\\"')}"`, {
-            maxBuffer: 100 * 1024 * 1024, // 100MB max buffer
+            maxBuffer: 100 * 1024 * 1024,
+            timeout: 10000
         });
 
         if (buffer && buffer.length > 100) {
             return buffer;
         }
-    } catch (err) {
-        console.error("Python pdf decryption failed:", err.message);
-    }
-
-    try {
-        const qpdfBuffer = execSync(`qpdf --decrypt --password="${password}" "${pdfPath}" -`, {
-            maxBuffer: 100 * 1024 * 1024,
-        });
-        if (qpdfBuffer && qpdfBuffer.length > 100) {
-            return qpdfBuffer;
-        }
     } catch (err) {}
 
+    // Fallback: direct read
     return fs.readFileSync(pdfPath);
 }
 

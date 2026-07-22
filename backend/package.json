@@ -19,6 +19,7 @@
     "fs-extra": "^11.3.6",
     "multer": "^2.2.0",
     "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^3.11.174",
     "uuid": "^14.0.1"
   },
   "devDependencies": {
