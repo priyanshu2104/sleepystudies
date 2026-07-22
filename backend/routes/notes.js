@@ -41,6 +41,14 @@ router.get("/", async (req, res) => {
 
             if (!files.length) continue;
 
+            let latestMtime = 0;
+            for (const file of files) {
+                const fStat = await fs.stat(path.join(subjPath, file));
+                if (fStat.mtimeMs > latestMtime) {
+                    latestMtime = fStat.mtimeMs;
+                }
+            }
+
             subjects.push({
                 slug: subjFolder,
                 title: subjFolder
@@ -54,6 +62,7 @@ router.get("/", async (req, res) => {
                     })
                     .join(" "),
                 notes: files.length,
+                updatedAt: latestMtime,
             });
         }
 

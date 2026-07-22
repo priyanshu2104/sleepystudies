@@ -9,6 +9,7 @@ type Subject = {
     title: string;
     slug: string;
     notes: number;
+    updatedAt?: number;
 };
 
 type Semester = {
@@ -119,6 +120,7 @@ export default function SubjectGrid() {
                                     slug={subject.slug}
                                     notes={subject.notes}
                                     semester={activeSemester.slug}
+                                    updatedAt={subject.updatedAt}
                                 />
                             ))}
                         </div>

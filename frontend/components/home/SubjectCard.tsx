@@ -19,7 +19,25 @@ type Props = {
     slug: string;
     notes: number;
     semester: string;
+    updatedAt?: number;
 };
+
+function formatRelativeTime(mtime?: number): string {
+    if (!mtime) return "⭐ Updated Recently";
+
+    const diffMs = Date.now() - mtime;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffWeeks = Math.floor(diffDays / 7);
+
+    if (diffHours < 1) return "🔥 Updated Just Now";
+    if (diffHours < 24) return `🔥 Updated ${diffHours}h ago`;
+    if (diffDays === 1) return "⭐ Updated Yesterday";
+    if (diffDays < 7) return `⭐ Updated ${diffDays}d ago`;
+    if (diffWeeks < 4) return `📅 Updated ${diffWeeks}w ago`;
+    
+    return `📅 Updated ${new Date(mtime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+}
 
 function getSubjectTheme(slug: string) {
     const s = slug.toLowerCase();
@@ -135,6 +153,7 @@ export default function SubjectCard({
     slug,
     notes,
     semester,
+    updatedAt,
 }: Props) {
     const theme = getSubjectTheme(slug);
 
@@ -170,7 +189,7 @@ export default function SubjectCard({
                 {/* Footer Divider & Action */}
                 <div className="mt-8 pt-5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-sm font-semibold text-slate-600 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
                     <span className="flex items-center text-slate-400 dark:text-slate-500 group-hover:text-blue-500/80 dark:group-hover:text-blue-400/80 transition-colors">
-                        ⭐ Updated Recently
+                        {formatRelativeTime(updatedAt)}
                     </span>
                     <span className="flex items-center gap-1">
                         Explore
