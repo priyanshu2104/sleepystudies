@@ -23,14 +23,23 @@ const { decryptImageBuffer } = require("./utils/imageCrypto");
 app.use("/images", (req, res, next) => {
     try {
         const decodedPath = decodeURIComponent(req.path);
-        let requestedPath = path.join(__dirname, "images", decodedPath);
-        
-        if (!fs.existsSync(requestedPath)) {
-            requestedPath = path.join(process.cwd(), "images", decodedPath);
+        const candidatePaths = [
+            path.join(__dirname, "images", decodedPath),
+            path.join(__dirname, "..", "images", decodedPath),
+            path.join(process.cwd(), "images", decodedPath),
+            path.join(process.cwd(), "backend", "images", decodedPath),
+        ];
+
+        let targetPath = null;
+        for (const candidate of candidatePaths) {
+            if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+                targetPath = candidate;
+                break;
+            }
         }
 
-        if (fs.existsSync(requestedPath) && fs.statSync(requestedPath).isFile()) {
-            const rawBytes = fs.readFileSync(requestedPath);
+        if (targetPath) {
+            const rawBytes = fs.readFileSync(targetPath);
             const decryptedBytes = decryptImageBuffer(rawBytes);
             res.setHeader("Content-Type", "image/png");
             return res.end(decryptedBytes);
