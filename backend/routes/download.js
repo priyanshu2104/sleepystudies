@@ -35,14 +35,18 @@ router.get("/:semester/:folder/:file", async (req, res) => {
         );
 
         const existingPdf = fs.readFileSync(pdfPath);
+        const sourcePdfDoc = await PDFDocument.load(existingPdf, { ignoreEncryption: true });
 
-        const pdfDoc = await PDFDocument.load(existingPdf, { ignoreEncryption: true });
+        // Create a brand-new clean, unencrypted document
+        const pdfDoc = await PDFDocument.create();
+
+        // Copy all pages from original document into new document
+        const pageIndices = sourcePdfDoc.getPageIndices();
+        const copiedPages = await pdfDoc.copyPages(sourcePdfDoc, pageIndices);
 
         const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-        const pages = pdfDoc.getPages();
-
-        pages.forEach((page) => {
+        copiedPages.forEach((page) => {
             page.drawText(
                 "Downloaded from SleepyStudies | sleepystudies.vercel.app",
                 {
@@ -53,6 +57,7 @@ router.get("/:semester/:folder/:file", async (req, res) => {
                     color: rgb(0.5, 0.5, 0.5),
                 }
             );
+            pdfDoc.addPage(page);
         });
 
         const pdfBytes = await pdfDoc.save();
