@@ -161,6 +161,17 @@ router.get("/:semester/:subject", async (req, res) => {
     const viewsList = readJSON("views.json");
     const downloadsList = readJSON("downloads.json");
 
+    let fileViewsMap = {};
+    let fileDownloadsMap = {};
+    const baselinePath = path.join(__dirname, "..", "config", "baseline.json");
+    if (await fs.pathExists(baselinePath)) {
+        try {
+            const baseline = await fs.readJson(baselinePath);
+            fileViewsMap = baseline.fileViews || {};
+            fileDownloadsMap = baseline.fileDownloads || {};
+        } catch (e) {}
+    }
+
     const protocol = req.headers["x-forwarded-proto"] || "http";
     const host = req.headers.host;
     const baseUrl = `${protocol}://${host}`;
@@ -179,8 +190,15 @@ router.get("/:semester/:subject", async (req, res) => {
             }
         }
 
-        const views = viewsList.filter(v => v.subject === subject && v.note === file).length;
-        const downloads = downloadsList.filter(d => d.subject === subject && d.note === file).length;
+        const fileKey = `${semester}/${subject}/${file}`;
+        const baseV = fileViewsMap[fileKey] || 0;
+        const baseD = fileDownloadsMap[fileKey] || 0;
+
+        const currentViews = viewsList.filter(v => (v.subject === subject || v.subject === `${semester}/${subject}`) && v.note === file).length;
+        const currentDownloads = downloadsList.filter(d => (d.subject === subject || d.subject === `${semester}/${subject}`) && d.note === file).length;
+
+        const finalViews = (currentViews >= baseV && baseV > 0) ? currentViews : (baseV + currentViews);
+        const finalDownloads = (currentDownloads >= baseD && baseD > 0) ? currentDownloads : (baseD + currentDownloads);
 
         return {
             title: formatNoteTitle(file),
@@ -188,8 +206,8 @@ router.get("/:semester/:subject", async (req, res) => {
             subject,
             semester,
             thumbnail,
-            views,
-            downloads
+            views: finalViews,
+            downloads: finalDownloads
         };
     }));
 

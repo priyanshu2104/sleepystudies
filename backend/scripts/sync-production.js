@@ -135,11 +135,41 @@ async function runSync() {
 
         // Update baseline stats checkpoint
         const { readJSON } = require("../utils/file");
-        const totalViews = readJSON("views.json").length;
-        const totalDownloads = readJSON("downloads.json").length;
+        const viewsList = readJSON("views.json");
+        const downloadsList = readJSON("downloads.json");
+
+        const totalViews = viewsList.length;
+        const totalDownloads = downloadsList.length;
+
+        const fileViews = {};
+        const fileDownloads = {};
+
+        viewsList.forEach(v => {
+            const sem = v.semester || "semester-5";
+            if (v.subject && v.note) {
+                const cleanSubj = v.subject.includes("/") ? v.subject : `${sem}/${v.subject}`;
+                const key = `${cleanSubj}/${v.note}`;
+                fileViews[key] = (fileViews[key] || 0) + 1;
+            }
+        });
+
+        downloadsList.forEach(d => {
+            const sem = d.semester || "semester-5";
+            if (d.subject && d.note) {
+                const cleanSubj = d.subject.includes("/") ? d.subject : `${sem}/${d.subject}`;
+                const key = `${cleanSubj}/${d.note}`;
+                fileDownloads[key] = (fileDownloads[key] || 0) + 1;
+            }
+        });
+
         const baselinePath = path.join(backendRoot, "config", "baseline.json");
         await fs.ensureDir(path.dirname(baselinePath));
-        await fs.writeJson(baselinePath, { baseViews: totalViews, baseDownloads: totalDownloads }, { spaces: 2 });
+        await fs.writeJson(baselinePath, {
+            baseViews: totalViews,
+            baseDownloads: totalDownloads,
+            fileViews,
+            fileDownloads
+        }, { spaces: 2 });
 
         console.log("\n\x1b[32m[SUCCESS] Synchronization complete!\x1b[0m");
         console.log(`✨ Status Summary:`);
