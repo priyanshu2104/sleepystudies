@@ -121,11 +121,14 @@ router.get("/overall-stats", async (req, res) => {
             }
         }
 
+        const computedViews = (viewsCount >= baseViews && baseViews > 0) ? viewsCount : (baseViews + viewsCount);
+        const computedDownloads = (downloadsCount >= baseDownloads && baseDownloads > 0) ? downloadsCount : (baseDownloads + downloadsCount);
+
         res.json({
             subjects: totalSubjects,
             notes: totalNotes,
-            views: baseViews + viewsCount,
-            downloads: baseDownloads + downloadsCount,
+            views: computedViews,
+            downloads: computedDownloads,
         });
     } catch (err) {
         console.error("Failed to compute stats:", err);
