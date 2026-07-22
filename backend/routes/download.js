@@ -36,7 +36,7 @@ router.get("/:semester/:folder/:file", async (req, res) => {
 
         const existingPdf = fs.readFileSync(pdfPath);
 
-        const pdfDoc = await PDFDocument.load(existingPdf);
+        const pdfDoc = await PDFDocument.load(existingPdf, { ignoreEncryption: true });
 
         const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 

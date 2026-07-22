@@ -45,9 +45,12 @@ router.get("/:semester/:folder/:file", async (req, res) => {
         if (files.length === 0) {
             const outputPrefix = path.join(imageDir, "page");
 
+            const pdfPassword = process.env.PDF_SECRET_PASSWORD || "SleepyStudiesSecurityPass2026";
+            const passFlag = pdfPassword ? `-upw "${pdfPassword}"` : "";
+
             await new Promise((resolve, reject) => {
                 exec(
-                    `pdftoppm "${pdfPath}" "${outputPrefix}" -png`,
+                    `pdftoppm ${passFlag} "${pdfPath}" "${outputPrefix}" -png`,
                     (err) => {
                         if (err) reject(err);
                         else resolve();

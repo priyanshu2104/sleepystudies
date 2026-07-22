@@ -110,7 +110,10 @@ router.post("/", upload.single("file"), async (req, res) => {
         await fs.ensureDir(imageDir);
         const outputPrefix = path.join(imageDir, "page");
 
-        exec(`pdftoppm "${destPath}" "${outputPrefix}" -png`, (err) => {
+        const pdfPassword = process.env.PDF_SECRET_PASSWORD || "SleepyStudiesSecurityPass2026";
+        const passFlag = pdfPassword ? `-upw "${pdfPassword}"` : "";
+
+        exec(`pdftoppm ${passFlag} "${destPath}" "${outputPrefix}" -png`, (err) => {
             if (err) {
                 console.error("Background thumbnail generation failed:", err);
             } else {
