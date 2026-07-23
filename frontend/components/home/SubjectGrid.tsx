@@ -48,12 +48,13 @@ export default function SubjectGrid() {
     useEffect(() => {
         if (!loading && semesters.length > 0) {
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get("scroll") === "subjects") {
+            const isScrollReq = urlParams.get("scroll") === "subjects" || window.location.hash === "#subjects";
+            if (isScrollReq) {
                 setTimeout(() => {
                     const element = document.getElementById("subjects");
                     if (element) {
                         element.scrollIntoView({ behavior: "smooth" });
-                        window.history.replaceState({}, document.title, "/");
+                        window.history.replaceState({}, document.title, window.location.pathname);
                     }
                 }, 100);
             }

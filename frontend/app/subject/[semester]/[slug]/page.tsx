@@ -62,7 +62,7 @@ export default async function SubjectPage({
             <div className="border-b border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900 py-8 px-6">
                 <div className="mx-auto max-w-7xl">
                     <Link
-                        href="/#subjects"
+                        href="/?scroll=subjects"
                         className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition duration-200"
                     >
                         <ArrowLeft size={16} />

@@ -105,13 +105,14 @@ export default function Navbar() {
                         {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
                     </button>
 
-                    <Link
+                    <a
                         href="/#subjects"
+                        onClick={scrollToSubjects}
                         className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-slate-900 dark:bg-slate-50 px-5 py-3 text-xs font-bold text-white dark:text-slate-900 transition hover:bg-slate-800 dark:hover:bg-slate-200 shadow-sm cursor-pointer"
                     >
                         Browse
                         <ArrowRight size={14} />
-                    </Link>
+                    </a>
 
                     {/* Mobile Menu Button */}
                     <button 
