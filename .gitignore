@@ -26,3 +26,8 @@ yarn-error.log*
 # Backend Database / Logs (Confidential Data)
 backend/data/*.json
 **/backend/data/*.json
+
+# Generated Image Cache (Render auto-generates from PDFs on-the-fly)
+backend/images/
+**/backend/images/
+
