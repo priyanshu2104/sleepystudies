@@ -151,11 +151,7 @@ cd sleepystudies
 ```
 
 ### 2. Configure Backend Environment
-```bash
-cd backend
-cp .env.example .env
-```
-Set the following in `backend/.env`:
+Create a `backend/.env` file:
 ```env
 ADMIN_PASSCODE=your_secure_admin_password
 PDF_SECRET_PASSWORD=your_pdf_encryption_password
@@ -191,7 +187,7 @@ NEXT_PUBLIC_API_URL=https://sleepystudies-api.onrender.com
 
 ### Backend → Render
 1. Create a **Node Web Service** on [Render](https://render.com).
-2. Attach a **Persistent Disk** mounted at `/opt/render/project/src/backend/data` to survive restarts.
+2. Attach a **Persistent Disk** mounted at your `backend/data` directory to preserve analytics logs across restarts.
 3. Set the following environment variables on Render:
    ```
    ADMIN_PASSCODE=your_secure_admin_password
