@@ -72,6 +72,19 @@ export default function PDFViewer({ pages }: Props) {
         };
     }, []);
 
+    // Pre-fetch next 3 pages in background for instant page flipping
+    useEffect(() => {
+        if (!pages || pages.length === 0) return;
+        const prefetchCount = 3;
+        for (let i = 1; i <= prefetchCount; i++) {
+            const nextIdx = page + i;
+            if (nextIdx < pages.length) {
+                const img = new window.Image();
+                img.src = pages[nextIdx];
+            }
+        }
+    }, [page, pages]);
+
     useEffect(() => {
         const disableContext = (e: MouseEvent) => e.preventDefault();
         document.addEventListener("contextmenu", disableContext);
