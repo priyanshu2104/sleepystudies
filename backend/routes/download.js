@@ -50,18 +50,17 @@ router.get("/:semester/:folder/:file", async (req, res) => {
 
         const watermarkText = `Downloaded by: ${studentName} (ID: ${studentId}) | Date: ${dateStr} | SleepyStudies • https://sleepystudies.vercel.app`;
 
-        pages.forEach((page) => {
-            const { width } = page.getSize();
-            const maxWidth = width - 60; // 30px left & right margins
+        const sampleWidth = pages[0] ? pages[0].getSize().width : 600;
+        const maxWidth = sampleWidth - 60;
+        let fontSize = 10.5;
+        let textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
+        while (textWidth > maxWidth && fontSize > 6.5) {
+            fontSize -= 0.5;
+            textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
+        }
 
-            let fontSize = 10.5;
-            let textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
-
-            while (textWidth > maxWidth && fontSize > 6.5) {
-                fontSize -= 0.5;
-                textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
-            }
-
+        const pagesToWatermark = pages.slice(0, 30);
+        pagesToWatermark.forEach((page) => {
             page.drawText(watermarkText, {
                 x: 30,
                 y: 20,

@@ -189,15 +189,7 @@ router.get("/:semester/:subject", async (req, res) => {
         const noteSlug = file.replace(".pdf", "");
         const imageDir = path.join(__dirname, "..", "images", semester, subject, noteSlug);
         
-        let thumbnail = null;
-        if (await fs.pathExists(imageDir)) {
-            const imgFiles = (await fs.readdir(imageDir))
-                .filter(f => f.endsWith(".png"))
-                .sort();
-            if (imgFiles.length > 0) {
-                thumbnail = `${baseUrl}/images/${semester}/${subject}/${noteSlug}/${imgFiles[0]}`;
-            }
-        }
+        const thumbnail = `${baseUrl}/images/${semester}/${subject}/${noteSlug}/page-1.png`;
 
         const fileKey = `${semester}/${subject}/${file}`;
         const baseV = fileViewsMap[fileKey] || 0;

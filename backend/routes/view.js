@@ -7,6 +7,8 @@ const { recordView } = require("../services/viewService");
 
 const router = express.Router();
 
+const { getPdfPageCount } = require("../utils/pdfHelper");
+
 router.get("/:semester/:folder/:file", async (req, res) => {
     try {
         const { semester, folder, file } = req.params;
@@ -26,65 +28,27 @@ router.get("/:semester/:folder/:file", async (req, res) => {
             });
         }
 
+        const noteSlug = file.replace(".pdf", "");
         const imageDir = path.join(
             __dirname,
             "..",
             "images",
             semester,
             folder,
-            file.replace(".pdf", "")
+            noteSlug
         );
 
         await fs.ensureDir(imageDir);
 
-        let files = (await fs.readdir(imageDir))
-            .filter((f) => f.endsWith(".png"))
-            .sort();
-
-        // Generate images only if they don't exist
-        if (files.length === 0) {
-            const outputPrefix = path.join(imageDir, "page");
-
-            const pdfPassword = process.env.PDF_SECRET_PASSWORD || "SleepyStudiesSecurityPass2026";
-            const passFlag = pdfPassword ? `-upw "${pdfPassword}"` : "";
-
-            await new Promise((resolve, reject) => {
-                exec(
-                    `pdftoppm ${passFlag} "${pdfPath}" "${outputPrefix}" -png`,
-                    (err) => {
-                        if (err) reject(err);
-                        else resolve();
-                    }
-                );
-            });
-
-            // Encrypt generated page images with AES-256 before storing to disk
-            const { encryptImageBuffer } = require("../utils/imageCrypto");
-            const generatedFiles = await fs.readdir(imageDir);
-            for (const f of generatedFiles) {
-                if (f.endsWith(".png")) {
-                    const p = path.join(imageDir, f);
-                    const raw = await fs.readFile(p);
-                    const enc = encryptImageBuffer(raw);
-                    await fs.writeFile(p, enc);
-                }
-            }
-
-            files = (await fs.readdir(imageDir))
-                .filter((f) => f.endsWith(".png"))
-                .sort();
-        }
+        const password = process.env.PDF_SECRET_PASSWORD || "SleepyStudiesSecurityPass2026";
+        const pageCount = getPdfPageCount(pdfPath, password);
 
         const protocol = req.headers["x-forwarded-proto"] || "http";
         const host = req.headers.host;
         const baseUrl = `${protocol}://${host}`;
 
-        const pages = files.map(
-            (f) =>
-                `${baseUrl}/images/${semester}/${folder}/${file.replace(
-                    ".pdf",
-                    ""
-                )}/${f}`
+        const pages = Array.from({ length: pageCount }, (_, i) =>
+            `${baseUrl}/images/${semester}/${folder}/${noteSlug}/page-${i + 1}.png`
         );
 
         res.json({
@@ -92,7 +56,7 @@ router.get("/:semester/:folder/:file", async (req, res) => {
             pages,
         });
     } catch (err) {
-        console.error(err);
+        console.error("View route error:", err);
 
         res.status(500).json({
             error: "Unable to load PDF",

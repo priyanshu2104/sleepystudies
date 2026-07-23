@@ -34,13 +34,18 @@ app.use("/images", (req, res, next) => {
 
         let targetPath = candidatePaths.find((c) => fs.existsSync(c) && fs.statSync(c).isFile());
 
-        // If image file does not exist on disk, attempt on-the-fly generation from corresponding PDF
+        // If image file does not exist on disk, attempt on-the-fly SINGLE-PAGE generation from corresponding PDF
         if (!targetPath) {
-            const parts = decodedPath.split("/").filter(Boolean); // e.g. ["semester-5", "compiler-design", "module-i", "page-01.png"]
+            const parts = decodedPath.split("/").filter(Boolean); // e.g. ["semester-5", "compiler-design", "module-i", "page-1.png"]
             if (parts.length >= 4) {
                 const semester = parts[0];
                 const folder = parts[1];
-                const pdfName = parts[2] + ".pdf";
+                const noteSlug = parts[2];
+                const pdfName = noteSlug + ".pdf";
+                const imageName = parts[3]; // e.g. "page-1.png" or "page-01.png"
+
+                const pageMatch = imageName.match(/page-(\d+)\.png$/i);
+                const pageNum = pageMatch ? parseInt(pageMatch[1], 10) : null;
 
                 const candidatePdfs = [
                     path.join(__dirname, "pdfs", semester, folder, pdfName),
@@ -51,33 +56,33 @@ app.use("/images", (req, res, next) => {
 
                 const pdfPath = candidatePdfs.find((p) => fs.existsSync(p));
 
-                if (pdfPath) {
-                    const imageDir = path.join(path.dirname(pdfPath), "..", "..", "images", semester, folder, parts[2]);
+                if (pdfPath && pageNum !== null) {
+                    const imageDir = path.join(__dirname, "images", semester, folder, noteSlug);
                     fs.mkdirSync(imageDir, { recursive: true });
-                    const outputPrefix = path.join(imageDir, "page");
+                    const targetFile = path.join(imageDir, imageName);
+                    const tempPrefix = path.join(imageDir, `temp_single_${pageNum}_${Date.now()}`);
                     const pdfPassword = process.env.PDF_SECRET_PASSWORD || "SleepyStudiesSecurityPass2026";
 
                     try {
-                        execSync(`pdftoppm -upw "${pdfPassword}" "${pdfPath}" "${outputPrefix}" -png`, { timeout: 15000 });
+                        execSync(`pdftoppm -upw "${pdfPassword}" -f ${pageNum} -l ${pageNum} -png "${pdfPath}" "${tempPrefix}"`, { timeout: 8000 });
 
-                        const generatedFiles = fs.readdirSync(imageDir);
-                        for (const f of generatedFiles) {
-                            if (f.endsWith(".png")) {
-                                const p = path.join(imageDir, f);
-                                const raw = fs.readFileSync(p);
-                                fs.writeFileSync(p, encryptImageBuffer(raw));
-                            }
+                        const genFiles = fs.readdirSync(imageDir).filter(f => f.startsWith(path.basename(tempPrefix)));
+                        if (genFiles.length > 0) {
+                            const genPath = path.join(imageDir, genFiles[0]);
+                            const rawBuf = fs.readFileSync(genPath);
+                            const encBuf = encryptImageBuffer(rawBuf);
+                            fs.writeFileSync(targetFile, encBuf);
+                            fs.unlinkSync(genPath); // clean temp single image file
+                            targetPath = targetFile;
                         }
-
-                        targetPath = candidatePaths.find((c) => fs.existsSync(c) && fs.statSync(c).isFile());
                     } catch (genErr) {
-                        console.error("Auto image generation error:", genErr.message);
+                        console.error(`Single page image generation error (page ${pageNum}):`, genErr.message);
                     }
                 }
             }
         }
 
-        if (targetPath) {
+        if (targetPath && fs.existsSync(targetPath)) {
             const rawBytes = fs.readFileSync(targetPath);
             const decryptedBytes = decryptImageBuffer(rawBytes);
             res.setHeader("Content-Type", "image/png");
