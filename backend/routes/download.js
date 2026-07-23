@@ -4,6 +4,7 @@ const fs = require("fs");
 
 const { PDFDocument, rgb, StandardFonts } = require("pdf-lib");
 const { recordDownload } = require("../services/downloadService");
+const { getDecryptedPdfBytes } = require("../utils/pdfDecryptor");
 
 const router = express.Router();
 
@@ -11,6 +12,19 @@ router.get("/:semester/:folder/:file", async (req, res) => {
     try {
         const { semester, folder, file } = req.params;
         const { viewerId, name } = req.query;
+
+        const pdfPath = path.join(
+            __dirname,
+            "..",
+            "pdfs",
+            semester,
+            folder,
+            file
+        );
+
+        if (!fs.existsSync(pdfPath)) {
+            return res.status(404).json({ error: "File not found" });
+        }
 
         const { ensureViewerExists } = require("../services/viewerService");
         const viewer = ensureViewerExists(viewerId, name, req);
@@ -25,18 +39,8 @@ router.get("/:semester/:folder/:file", async (req, res) => {
             browser: req.headers["user-agent"],
         });
 
-        const pdfPath = path.join(
-            __dirname,
-            "..",
-            "pdfs",
-            semester,
-            folder,
-            file
-        );
-
-        const { getDecryptedPdfBytes } = require("../utils/pdfDecryptor");
         const password = process.env.PDF_SECRET_PASSWORD || "SleepyStudiesSecurityPass2026";
-        const decryptedBytes = getDecryptedPdfBytes(pdfPath, password);
+        const decryptedBytes = await getDecryptedPdfBytes(pdfPath, password);
 
         const pdfDoc = await PDFDocument.load(decryptedBytes, { ignoreEncryption: true });
 
@@ -71,20 +75,13 @@ router.get("/:semester/:folder/:file", async (req, res) => {
 
         const pdfBytes = await pdfDoc.save();
 
-        res.setHeader(
-            "Content-Type",
-            "application/pdf"
-        );
-
-        res.setHeader(
-            "Content-Disposition",
-            `attachment; filename="${file}"`
-        );
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="${file}"`);
 
         res.send(Buffer.from(pdfBytes));
 
     } catch (err) {
-        console.error(err);
+        console.error("PDF Download Generation Error:", err);
         res.status(500).json({
             error: "Unable to generate PDF"
         });

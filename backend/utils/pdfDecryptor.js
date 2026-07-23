@@ -1,9 +1,22 @@
-const { execSync } = require("child_process");
 const fs = require("fs");
+const { decryptPDF } = require("@pdfsmaller/pdf-decrypt");
+const { execSync } = require("child_process");
 const path = require("path");
 
-function getDecryptedPdfBytes(pdfPath, password = "SleepyStudiesSecurityPass2026") {
-    // 1. Try pdftocairo (Native Poppler C++ binary on Linux/Render)
+async function getDecryptedPdfBytes(pdfPath, password = "SleepyStudiesSecurityPass2026") {
+    const rawBuffer = fs.readFileSync(pdfPath);
+
+    // 1. Try pure JavaScript Web Crypto PDF decryption (zero native binary dependencies)
+    try {
+        const decryptedUint8Array = await decryptPDF(new Uint8Array(rawBuffer), password);
+        if (decryptedUint8Array && decryptedUint8Array.length > 100) {
+            return Buffer.from(decryptedUint8Array);
+        }
+    } catch (err) {
+        // Continue to fallbacks if JS decryption encounters unusual PDF features
+    }
+
+    // 2. Try pdftocairo (Native Poppler binary fallback)
     try {
         const tempDir = path.join(__dirname, "..", "temp_uploads");
         fs.mkdirSync(tempDir, { recursive: true });
@@ -18,51 +31,10 @@ function getDecryptedPdfBytes(pdfPath, password = "SleepyStudiesSecurityPass2026
                 return bytes;
             }
         }
-    } catch (err) {
-        console.error("pdftocairo decryption failed, trying fallbacks:", err.message);
-    }
-
-    // 2. Try qpdf
-    try {
-        const qpdfBuffer = execSync(`qpdf --decrypt --password="${password}" "${pdfPath}" -`, {
-            maxBuffer: 100 * 1024 * 1024,
-            timeout: 25000
-        });
-        if (qpdfBuffer && qpdfBuffer.length > 100) {
-            return qpdfBuffer;
-        }
     } catch (err) {}
 
-    // 3. Try Python pypdf with fast writer.append
-    try {
-        const pyCmd = `import sys, io
-from pypdf import PdfReader, PdfWriter
-reader = PdfReader(r'''${pdfPath}''')
-if reader.is_encrypted:
-    try:
-        reader.decrypt('''${password}''')
-    except Exception:
-        pass
-writer = PdfWriter()
-writer.append(reader)
-out = io.BytesIO()
-writer.write(out)
-sys.stdout.buffer.write(out.getvalue())`;
-
-        const buffer = execSync(`python3 -c "${pyCmd.replace(/"/g, '\\"')}"`, {
-            maxBuffer: 100 * 1024 * 1024,
-            timeout: 25000
-        });
-
-        if (buffer && buffer.length > 100) {
-            return buffer;
-        }
-    } catch (err) {
-        console.error("Python pypdf decryption error:", err.message);
-    }
-
-    // Fallback: direct read
-    return fs.readFileSync(pdfPath);
+    // Fallback: raw buffer
+    return rawBuffer;
 }
 
 module.exports = { getDecryptedPdfBytes };
