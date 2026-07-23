@@ -193,6 +193,10 @@ export default function AdminPage() {
             const data = await res.json();
 
             if (!res.ok) {
+                if (res.status === 401) {
+                    sessionStorage.removeItem("admin_passcode");
+                    setPasscode("");
+                }
                 throw new Error(data.error || "Failed to upload note.");
             }
 
@@ -411,9 +415,24 @@ export default function AdminPage() {
 
                     {/* Admin passcode */}
                     <div>
-                        <label className="block mb-2 font-bold text-sm text-slate-700 dark:text-slate-300">
-                            Admin Passcode
-                        </label>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="font-bold text-sm text-slate-700 dark:text-slate-300">
+                                Admin Passcode
+                            </label>
+                            {passcode && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        sessionStorage.removeItem("admin_passcode");
+                                        setPasscode("");
+                                        setStatus({ type: null, message: "" });
+                                    }}
+                                    className="text-xs font-bold text-slate-400 hover:text-red-500 transition cursor-pointer"
+                                >
+                                    Clear Saved Passcode
+                                </button>
+                            )}
+                        </div>
                         <div className="relative">
                             <input
                                 type="password"
