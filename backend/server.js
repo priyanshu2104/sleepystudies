@@ -29,7 +29,7 @@ function renderSinglePageSync(pdfPath, imageDir, pageNum, pdfPassword) {
     const tempPrefix = path.join(imageDir, `temp_single_${pageNum}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`);
 
     try {
-        execSync(`pdftoppm -upw "${pdfPassword}" -scale-to-x 1000 -scale-to-y -1 -f ${pageNum} -l ${pageNum} -png "${pdfPath}" "${tempPrefix}"`, { timeout: 8000 });
+        execSync(`pdftoppm -upw "${pdfPassword}" -scale-to-x 750 -scale-to-y -1 -f ${pageNum} -l ${pageNum} -png "${pdfPath}" "${tempPrefix}"`, { timeout: 8000 });
         const genFiles = fs.readdirSync(imageDir).filter(f => f.startsWith(path.basename(tempPrefix)));
         if (genFiles.length > 0) {
             const genPath = path.join(imageDir, genFiles[0]);
