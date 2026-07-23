@@ -50,7 +50,7 @@ async function getFilesRecursively(dir, rootDir, fileList = []) {
 router.get("/manifest", checkAdminKey, async (req, res) => {
     try {
         const backendRoot = path.resolve(__dirname, "..");
-        const foldersToSync = ["data", "pdfs", "images"];
+        const foldersToSync = ["data", "pdfs"];
         
         let allFiles = [];
         for (const folder of foldersToSync) {

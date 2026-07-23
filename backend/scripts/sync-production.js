@@ -94,7 +94,13 @@ async function runSync() {
                     skipCount++;
                 }
             } else {
-                // Non-data files (PDFs, images) are download-only (from production server to local)
+                // Ignore image downloads since page images are rendered on-the-fly from PDFs
+                if (item.path.startsWith("images/")) {
+                    skipCount++;
+                    continue;
+                }
+
+                // Non-data files (PDFs) are download-only (from production server to local)
                 let shouldDownload = false;
                 if (!(await fs.pathExists(localPath))) {
                     shouldDownload = true;
