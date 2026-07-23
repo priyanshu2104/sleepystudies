@@ -59,8 +59,7 @@ router.get("/:semester/:folder/:file", async (req, res) => {
             textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
         }
 
-        const pagesToWatermark = pages.slice(0, 30);
-        pagesToWatermark.forEach((page) => {
+        pages.forEach((page) => {
             page.drawText(watermarkText, {
                 x: 30,
                 y: 20,

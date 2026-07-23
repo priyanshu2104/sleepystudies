@@ -9,11 +9,11 @@ function getDecryptedPdfBytes(pdfPath, password = "SleepyStudiesSecurityPass2026
         fs.mkdirSync(tempDir, { recursive: true });
         const tempOut = path.join(tempDir, `dec_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.pdf`);
         
-        execSync(`pdftocairo -upw "${password}" -pdf "${pdfPath}" "${tempOut}"`, { timeout: 10000 });
+        execSync(`pdftocairo -upw "${password}" -pdf "${pdfPath}" "${tempOut}"`, { timeout: 25000 });
         
         if (fs.existsSync(tempOut)) {
             const bytes = fs.readFileSync(tempOut);
-            fs.unlinkSync(tempOut); // Clean up temp file
+            try { fs.unlinkSync(tempOut); } catch (e) {}
             if (bytes && bytes.length > 100) {
                 return bytes;
             }
@@ -26,14 +26,14 @@ function getDecryptedPdfBytes(pdfPath, password = "SleepyStudiesSecurityPass2026
     try {
         const qpdfBuffer = execSync(`qpdf --decrypt --password="${password}" "${pdfPath}" -`, {
             maxBuffer: 100 * 1024 * 1024,
-            timeout: 10000
+            timeout: 25000
         });
         if (qpdfBuffer && qpdfBuffer.length > 100) {
             return qpdfBuffer;
         }
     } catch (err) {}
 
-    // 3. Try Python pypdf
+    // 3. Try Python pypdf with fast writer.append
     try {
         const pyCmd = `import sys, io
 from pypdf import PdfReader, PdfWriter
@@ -44,21 +44,22 @@ if reader.is_encrypted:
     except Exception:
         pass
 writer = PdfWriter()
-for page in reader.pages:
-    writer.add_page(page)
+writer.append(reader)
 out = io.BytesIO()
 writer.write(out)
 sys.stdout.buffer.write(out.getvalue())`;
 
         const buffer = execSync(`python3 -c "${pyCmd.replace(/"/g, '\\"')}"`, {
             maxBuffer: 100 * 1024 * 1024,
-            timeout: 10000
+            timeout: 25000
         });
 
         if (buffer && buffer.length > 100) {
             return buffer;
         }
-    } catch (err) {}
+    } catch (err) {
+        console.error("Python pypdf decryption error:", err.message);
+    }
 
     // Fallback: direct read
     return fs.readFileSync(pdfPath);
