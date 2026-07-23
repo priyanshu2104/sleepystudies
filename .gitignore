@@ -31,3 +31,7 @@ backend/data/*.json
 backend/images/
 **/backend/images/
 
+# Temporary upload buffer
+backend/temp_uploads/
+**/backend/temp_uploads/
+
