@@ -2,7 +2,7 @@ const express = require("express");
 const path = require("path");
 const fs = require("fs");
 
-const { PDFDocument, rgb, StandardFonts } = require("pdf-lib");
+const { PDFDocument, rgb, StandardFonts, degrees } = require("pdf-lib");
 const { recordDownload } = require("../services/downloadService");
 const { getDecryptedPdfBytes } = require("../utils/pdfDecryptor");
 
@@ -54,23 +54,97 @@ router.get("/:semester/:folder/:file", async (req, res) => {
 
         const watermarkText = `Downloaded by: ${studentName} (ID: ${studentId}) | Date: ${dateStr} | SleepyStudies • https://sleepystudies.vercel.app`;
 
-        const sampleWidth = pages[0] ? pages[0].getSize().width : 600;
-        const maxWidth = sampleWidth - 60;
-        let fontSize = 10.5;
-        let textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
-        while (textWidth > maxWidth && fontSize > 6.5) {
-            fontSize -= 0.5;
-            textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
-        }
-
         pages.forEach((page) => {
-            page.drawText(watermarkText, {
-                x: 30,
-                y: 20,
-                size: fontSize,
-                font,
-                color: rgb(0.35, 0.35, 0.35),
-            });
+            const { width: pageW, height: pageH } = page.getSize();
+            const rot = (page.getRotation().angle || 0) % 360;
+
+            const isRotated90or270 = rot === 90 || rot === 270;
+            const visWidth = isRotated90or270 ? pageH : pageW;
+            const visHeight = isRotated90or270 ? pageW : pageH;
+
+            const maxTextWidth = visWidth - 40;
+            let fontSize = 10.5;
+            let textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
+            while (textWidth > maxTextWidth && fontSize > 5.5) {
+                fontSize -= 0.5;
+                textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
+            }
+
+            const startX = Math.max(15, (visWidth - textWidth) / 2);
+            const startY = 20;
+
+            try {
+                if (rot === 0) {
+                    page.drawRectangle({
+                        x: startX - 6,
+                        y: startY - 4,
+                        width: textWidth + 12,
+                        height: fontSize + 8,
+                        color: rgb(0.96, 0.96, 0.96),
+                        opacity: 0.85,
+                    });
+                    page.drawText(watermarkText, {
+                        x: startX,
+                        y: startY,
+                        size: fontSize,
+                        font,
+                        color: rgb(0.2, 0.2, 0.2),
+                    });
+                } else if (rot === 90) {
+                    page.drawRectangle({
+                        x: pageW - startY - (fontSize + 4),
+                        y: startX - 6,
+                        width: fontSize + 8,
+                        height: textWidth + 12,
+                        color: rgb(0.96, 0.96, 0.96),
+                        opacity: 0.85,
+                    });
+                    page.drawText(watermarkText, {
+                        x: pageW - startY,
+                        y: startX,
+                        size: fontSize,
+                        font,
+                        color: rgb(0.2, 0.2, 0.2),
+                        rotate: degrees(90),
+                    });
+                } else if (rot === 180) {
+                    page.drawRectangle({
+                        x: pageW - startX - textWidth - 6,
+                        y: pageH - startY - (fontSize + 4),
+                        width: textWidth + 12,
+                        height: fontSize + 8,
+                        color: rgb(0.96, 0.96, 0.96),
+                        opacity: 0.85,
+                    });
+                    page.drawText(watermarkText, {
+                        x: pageW - startX,
+                        y: pageH - startY,
+                        size: fontSize,
+                        font,
+                        color: rgb(0.2, 0.2, 0.2),
+                        rotate: degrees(180),
+                    });
+                } else if (rot === 270) {
+                    page.drawRectangle({
+                        x: startY - 4,
+                        y: pageH - startX - textWidth - 6,
+                        width: fontSize + 8,
+                        height: textWidth + 12,
+                        color: rgb(0.96, 0.96, 0.96),
+                        opacity: 0.85,
+                    });
+                    page.drawText(watermarkText, {
+                        x: startY,
+                        y: pageH - startX,
+                        size: fontSize,
+                        font,
+                        color: rgb(0.2, 0.2, 0.2),
+                        rotate: degrees(270),
+                    });
+                }
+            } catch (wErr) {
+                console.error("Failed to watermark page:", wErr);
+            }
         });
 
         const pdfBytes = await pdfDoc.save();

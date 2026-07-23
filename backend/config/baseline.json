@@ -1,6 +1,6 @@
 {
-  "baseViews": 62,
-  "baseDownloads": 34,
+  "baseViews": 63,
+  "baseDownloads": 37,
   "fileViews": {
     "semester-5/software-engineering/book.pdf": 14,
     "semester-5/compiler-design/module-i.pdf": 18,
@@ -17,7 +17,8 @@
     "semester-5/artificial-intelligence/module-iv.pdf": 1,
     "semester-5/compiler-design/module-i-mesra.pdf": 1,
     "semester-5/data-mining-concepts-and-techniques/module-ii.pdf": 1,
-    "semester-5/compiler-design/module-i-jaipur.pdf": 1
+    "semester-5/compiler-design/module-i-jaipur.pdf": 1,
+    "semester-5/data-mining-concepts-and-techniques/module-iii.pdf": 1
   },
   "fileDownloads": {
     "semester-5/software-engineering/book.pdf": 9,
@@ -26,8 +27,10 @@
     "semester-5/data-mining-concepts-and-techniques/module-ii.pdf": 3,
     "semester-5/data-mining-concepts-and-techniques/module-i.pdf": 2,
     "semester-5/artificial-intelligence/module-i.pdf": 2,
-    "semester-5/software-engineering/book-pressman.pdf": 2,
+    "semester-5/software-engineering/book-pressman.pdf": 3,
     "semester-5/compiler-design/module-i-jaipur.pdf": 1,
-    "semester-5/software-engineering/book-rajib-mall.pdf": 1
+    "semester-5/software-engineering/book-rajib-mall.pdf": 1,
+    "semester-5/software-engineering/book-sommerville.pdf": 1,
+    "semester-5/data-mining-concepts-and-techniques/module-iii.pdf": 1
   }
 }

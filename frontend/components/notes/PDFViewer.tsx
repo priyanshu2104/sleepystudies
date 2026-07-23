@@ -181,28 +181,34 @@ export default function PDFViewer({ pages }: Props) {
 
                     {/* WATERMARK LAYER */}
                     <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden select-none">
-                        {Array.from({ length: 16 }).map((_, index) => (
+                        {[
+                            { top: "10%", left: "8%" },
+                            { top: "24%", left: "54%" },
+                            { top: "42%", left: "8%" },
+                            { top: "56%", left: "54%" },
+                            { top: "72%", left: "8%" },
+                            { top: "86%", left: "54%" },
+                        ].map((pos, index) => (
                             <div
                                 key={index}
-                                className="absolute font-semibold text-slate-900/25 pointer-events-none select-none text-center leading-relaxed"
+                                className="absolute font-semibold pointer-events-none select-none text-center leading-tight"
                                 style={{
-                                    top: `${Math.floor(index / 4) * 25 + 8}%`,
-                                    left: `${(index % 4) * 25 + 4}%`,
-                                    transform: "rotate(-35deg)",
-                                    fontSize: "12px",
+                                    top: pos.top,
+                                    left: pos.left,
+                                    transform: "rotate(-25deg)",
                                     whiteSpace: "nowrap",
                                 }}
                             >
-                                <div className="font-extrabold tracking-widest text-[13px] text-slate-900/30">SLEEPYSTUDIES.VERCEL.APP</div>
-                                <div className="uppercase tracking-wider text-[11px] mt-0.5 font-bold text-slate-900/30">
-                                    {viewer?.name 
-                                        ? (viewer.name.length > 20 ? `${viewer.name.substring(0, 18)}...` : viewer.name)
-                                        : "STUDENT"}
+                                <div className="font-extrabold tracking-widest text-[10px] sm:text-[12px] text-slate-900/10 uppercase">
+                                    SLEEPYSTUDIES.VERCEL.APP
                                 </div>
-                                <div className="font-mono text-[9px] text-slate-900/25">{viewer?.viewerId || viewer?.id || "GUEST-ID"}</div>
-                                <div className="text-[9px] tracking-wide mt-0.5 font-bold text-slate-900/25">EDUCATIONAL USE ONLY</div>
-                                <div className="text-[9px] text-slate-900/20">
-                                    {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                                <div className="uppercase tracking-wider text-[8.5px] sm:text-[10px] mt-0.5 font-bold text-slate-900/10">
+                                    {viewer?.name 
+                                        ? (viewer.name.length > 18 ? `${viewer.name.substring(0, 15)}...` : viewer.name)
+                                        : "STUDENT"} • {viewer?.viewerId || viewer?.id || "GUEST-ID"}
+                                </div>
+                                <div className="text-[8px] sm:text-[9px] tracking-wide mt-0.5 font-semibold text-slate-900/08">
+                                    EDUCATIONAL USE ONLY
                                 </div>
                             </div>
                         ))}
