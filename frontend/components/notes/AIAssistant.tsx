@@ -30,7 +30,7 @@ function renderFormattedContent(content: string) {
         if (trimmed.startsWith("```")) {
             if (inCodeBlock) {
                 elements.push(
-                    <pre key={`code-${index}`} className="my-2 p-3 bg-slate-950 text-slate-100 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800 shadow-inner">
+                    <pre key={`code-${index}`} className="my-2 p-3 bg-slate-950 text-slate-100 rounded-xl font-mono text-xs overflow-x-auto break-all border border-slate-800 shadow-inner max-w-full">
                         <code>{codeBlockLines.join("\n")}</code>
                     </pre>
                 );
@@ -50,7 +50,7 @@ function renderFormattedContent(content: string) {
         // Handle Headers
         if (trimmed.startsWith("### ")) {
             elements.push(
-                <h3 key={`h3-${index}`} className="text-sm sm:text-base font-extrabold text-purple-600 dark:text-purple-400 mt-4 mb-2 border-b border-purple-100 dark:border-purple-900/50 pb-1 flex items-center gap-1.5">
+                <h3 key={`h3-${index}`} className="text-sm sm:text-base font-extrabold text-purple-600 dark:text-purple-400 mt-4 mb-2 border-b border-purple-100 dark:border-purple-900/50 pb-1 flex items-center gap-1.5 break-words max-w-full">
                     {trimmed.replace("### ", "")}
                 </h3>
             );
@@ -59,7 +59,7 @@ function renderFormattedContent(content: string) {
 
         if (trimmed.startsWith("#### ")) {
             elements.push(
-                <h4 key={`h4-${index}`} className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-3 mb-1">
+                <h4 key={`h4-${index}`} className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-3 mb-1 break-words max-w-full">
                     {trimmed.replace("#### ", "")}
                 </h4>
             );
@@ -75,9 +75,9 @@ function renderFormattedContent(content: string) {
         if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || /^\d+\.\s/.test(trimmed)) {
             const formattedText = renderInlineFormatting(trimmed);
             elements.push(
-                <div key={`bullet-${index}`} className="flex items-start gap-2 my-1 pl-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
-                    <span className="text-purple-500 font-bold mt-0.5">•</span>
-                    <span className="flex-1 leading-relaxed">{formattedText}</span>
+                <div key={`bullet-${index}`} className="flex items-start gap-2 my-1 pl-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300 min-w-0 max-w-full">
+                    <span className="text-purple-500 font-bold mt-0.5 flex-shrink-0">•</span>
+                    <span className="flex-1 leading-relaxed break-words min-w-0 max-w-full">{formattedText}</span>
                 </div>
             );
             return;
@@ -91,7 +91,7 @@ function renderFormattedContent(content: string) {
 
         // Standard Paragraph
         elements.push(
-            <p key={`p-${index}`} className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed my-1">
+            <p key={`p-${index}`} className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed my-1 break-words min-w-0 max-w-full">
                 {renderInlineFormatting(line)}
             </p>
         );
@@ -114,7 +114,7 @@ function renderInlineFormatting(text: string): React.ReactNode {
         }
         if (part.startsWith("`") && part.endsWith("`")) {
             return (
-                <code key={i} className="bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded text-[11px] font-mono border border-purple-200 dark:border-purple-800/60 mx-0.5">
+                <code key={i} className="bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded text-[11px] font-mono border border-purple-200 dark:border-purple-800/60 mx-0.5 break-all">
                     {part.slice(1, -1)}
                 </code>
             );
@@ -137,7 +137,7 @@ export default function AIAssistant({ semester, subject, note }: Props) {
         const queryText = customPrompt || prompt;
         if (!queryText && !mode) return;
 
-        setPrompt("");
+        setPrompt(""); // Immediately clear text input
         setLoading(true);
         setResponse(null);
 
@@ -245,7 +245,7 @@ export default function AIAssistant({ semester, subject, note }: Props) {
                         </div>
 
                         {/* Conversation Body */}
-                        <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4">
+                        <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4 min-w-0 max-w-full">
                             {!response && !loading && (
                                 <div className="flex flex-col items-center justify-center h-full text-center p-6 text-slate-400 dark:text-slate-500">
                                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-50 dark:bg-slate-800 text-purple-600 dark:text-purple-400 mb-4">
@@ -270,13 +270,13 @@ export default function AIAssistant({ semester, subject, note }: Props) {
                             )}
 
                             {response && !loading && (
-                                <div className="space-y-4">
-                                    <div className="flex items-start justify-between gap-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-sm">
-                                        <div className="flex gap-3 text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed w-full">
+                                <div className="space-y-4 min-w-0 max-w-full">
+                                    <div className="flex items-start justify-between gap-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-sm min-w-0 max-w-full overflow-hidden">
+                                        <div className="flex gap-3 text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed min-w-0 max-w-full overflow-hidden flex-1">
                                             <div className="flex-shrink-0 h-7 w-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-xs mt-0.5">
                                                 AI
                                             </div>
-                                            <div className="flex-1 font-sans">
+                                            <div className="flex-1 min-w-0 max-w-full font-sans break-words overflow-x-auto">
                                                 {renderFormattedContent(response)}
                                             </div>
                                         </div>
@@ -298,7 +298,9 @@ export default function AIAssistant({ semester, subject, note }: Props) {
                             <form
                                 onSubmit={(e) => {
                                     e.preventDefault();
-                                    handleAsk();
+                                    if (prompt.trim() && !loading) {
+                                        handleAsk();
+                                    }
                                 }}
                                 className="flex items-center gap-2"
                             >
@@ -306,6 +308,14 @@ export default function AIAssistant({ semester, subject, note }: Props) {
                                     type="text"
                                     value={prompt}
                                     onChange={(e) => setPrompt(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault();
+                                            if (prompt.trim() && !loading) {
+                                                handleAsk();
+                                            }
+                                        }
+                                    }}
                                     placeholder="Type your question about this note..."
                                     className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                                 />
