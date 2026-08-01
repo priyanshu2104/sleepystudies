@@ -88,6 +88,13 @@ export default function NoteCard({
                 <div className="mt-8 flex gap-3 flex-shrink-0">
                     <Link
                         href={`/view/${semester}/${subject}/${file}`}
+                        prefetch={true}
+                        onMouseEnter={() => {
+                            if (thumbnail) {
+                                const img = new window.Image();
+                                img.src = thumbnail;
+                            }
+                        }}
                         className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 py-3.5 px-4 text-sm font-semibold text-white transition-colors duration-200 hover:bg-blue-700 shadow-sm hover:shadow-blue-500/10 cursor-pointer"
                     >
                         <Eye size={16} />
