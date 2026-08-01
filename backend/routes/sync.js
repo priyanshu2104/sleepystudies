@@ -58,6 +58,20 @@ router.get("/manifest", checkAdminKey, async (req, res) => {
             await getFilesRecursively(folderPath, backendRoot, allFiles);
         }
 
+        // Ensure key data files are always present in manifest
+        const dataFiles = [
+            "data/views.json",
+            "data/downloads.json",
+            "data/viewers.json",
+            "data/aisearches.json"
+        ];
+
+        dataFiles.forEach(df => {
+            if (!allFiles.some(f => f.path === df)) {
+                allFiles.push({ path: df, size: 100, mtime: Date.now() });
+            }
+        });
+
         res.json(allFiles);
     } catch (err) {
         console.error("Failed to build sync manifest:", err);
@@ -72,6 +86,32 @@ router.get("/file", checkAdminKey, async (req, res) => {
         const requestedPath = req.query.path;
         if (!requestedPath) {
             return res.status(400).json({ error: "Missing 'path' query parameter" });
+        }
+
+        const { getIsConnected } = require("../config/db");
+        const View = require("../models/View");
+        const Download = require("../models/Download");
+        const Viewer = require("../models/Viewer");
+        const AISearch = require("../models/AISearch");
+
+        // If data/*.json is requested and MongoDB Atlas is connected, export live DB records
+        if (requestedPath.startsWith("data/") && getIsConnected()) {
+            if (requestedPath.endsWith("views.json")) {
+                const docs = await View.find({}).lean();
+                return res.json(docs);
+            }
+            if (requestedPath.endsWith("downloads.json")) {
+                const docs = await Download.find({}).lean();
+                return res.json(docs);
+            }
+            if (requestedPath.endsWith("viewers.json")) {
+                const docs = await Viewer.find({}).lean();
+                return res.json(docs);
+            }
+            if (requestedPath.endsWith("aisearches.json")) {
+                const docs = await AISearch.find({}).lean();
+                return res.json(docs);
+            }
         }
 
         const backendRoot = path.resolve(__dirname, "..");
@@ -93,7 +133,7 @@ router.get("/file", checkAdminKey, async (req, res) => {
 
         // Check if file exists and is not a directory
         if (!(await fs.pathExists(absolutePath))) {
-            return res.status(404).json({ error: "File not found" });
+            return res.json([]);
         }
 
         const stat = await fs.stat(absolutePath);
@@ -121,12 +161,10 @@ router.post("/upload", checkAdminKey, async (req, res) => {
         const backendRoot = path.resolve(__dirname, "..");
         const absolutePath = path.resolve(backendRoot, requestedPath);
 
-        // Security check: Must not escape backend root directory
         if (!absolutePath.startsWith(backendRoot)) {
             return res.status(403).json({ error: "Access Denied: Path escapes server directory." });
         }
 
-        // Security check: Must reside strictly inside the data/ folder for uploads
         const relative = path.relative(backendRoot, absolutePath);
         const firstSegment = relative.split(path.sep)[0];
 
@@ -134,7 +172,6 @@ router.post("/upload", checkAdminKey, async (req, res) => {
             return res.status(403).json({ error: "Access Denied: You are only allowed to upload/restore files inside the data/ folder." });
         }
 
-        // Write the file
         await fs.ensureDir(path.dirname(absolutePath));
         await fs.writeFile(absolutePath, content, "utf8");
 
@@ -153,11 +190,13 @@ router.post("/reset-analytics", checkAdminKey, async (req, res) => {
         const View = require("../models/View");
         const Download = require("../models/Download");
         const Viewer = require("../models/Viewer");
+        const AISearch = require("../models/AISearch");
 
         if (getIsConnected()) {
             await View.deleteMany({});
             await Download.deleteMany({});
             await Viewer.deleteMany({});
+            await AISearch.deleteMany({});
             console.log("🧹 MongoDB Atlas wiped to 0 via Admin API.");
             return res.json({ success: true, message: "MongoDB Atlas analytics reset to 0" });
         } else {
