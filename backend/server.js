@@ -153,6 +153,7 @@ app.use("/view", viewRoute);
 app.use("/download", downloadRoute);
 app.use("/upload", uploadRoute);
 app.use("/api/sync", require("./routes/sync"));
+app.use("/api/ai", require("./routes/ai"));
 
 app.get("/", (req, res) => {
     res.send("SleepyStudies Backend Running");

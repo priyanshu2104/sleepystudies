@@ -13,6 +13,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@pdfsmaller/pdf-decrypt": "^1.0.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

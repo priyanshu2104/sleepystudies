@@ -64,7 +64,12 @@
 - **Sequential Startup Warm-Up**: On server boot, `warmUpCatalog` pre-renders thumbnails and first pages sequentially, keeping memory consumption $< 150\text{MB}$ RAM to prevent OOM errors.
 - **Client Hover Prefetching**: Mouse hover on note cards triggers background image prefetching, enabling $0\text{ms}$ perceived latency upon clicking.
 
-### 3. 🍃 Hybrid Persistence Layer (Cloud DB + Offline Fallback)
+### 3. 🤖 AI Study Assistant (Google Gemini 1.5 Flash)
+- **Interactive AI Tutor**: Integrated Generative AI tutoring via `@google/generative-ai` (`gemini-1.5-flash`).
+- **Quick Action Prompts**: 1-click **Summarize Module** (executive summary) & **5 Exam Questions** (high-yield practice questions with model answers).
+- **Custom Academic Q&A**: Accepts student prompts and provides formatted answers tailored to the subject.
+
+### 4. 🍃 Hybrid Persistence Layer (Cloud DB + Offline Fallback)
 - **MongoDB Atlas Integration**: View, Download, and Viewer events are persisted to cloud MongoDB collections (`views`, `downloads`, `viewers`).
 - **Resilient Offline Fallback**: If `MONGODB_URI` is absent (e.g., local offline dev), the backend seamlessly falls back to JSON file storage without code changes or downtime.
 

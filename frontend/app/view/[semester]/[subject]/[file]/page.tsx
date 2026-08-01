@@ -1,6 +1,7 @@
 import PDFViewer from "@/components/notes/PDFViewer";
 import ViewerGate from "@/components/viewer/ViewerGate";
 import DownloadButton from "@/components/notes/DownloadButton";
+import AIAssistant from "@/components/notes/AIAssistant";
 import { API_URL } from "@/utils/api";
 
 type Props = {
@@ -65,14 +66,17 @@ export default async function ViewPage({
                         </p>
                     </div>
 
-                    <DownloadButton
-                        semester={semester}
-                        subject={subject}
-                        file={file}
-                        className="rounded-xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 shadow-sm hover:shadow-blue-500/10 cursor-pointer text-sm font-semibold flex items-center justify-center transition-colors duration-150"
-                    >
-                        Download PDF
-                    </DownloadButton>
+                    <div className="flex items-center gap-3">
+                        <AIAssistant semester={semester} subject={subject} note={file} />
+                        <DownloadButton
+                            semester={semester}
+                            subject={subject}
+                            file={file}
+                            className="rounded-xl bg-blue-600 px-6 py-2.5 text-white hover:bg-blue-700 shadow-sm hover:shadow-blue-500/10 cursor-pointer text-sm font-semibold flex items-center justify-center transition-colors duration-150"
+                        >
+                            Download PDF
+                        </DownloadButton>
+                    </div>
                 </div>
             </div>
 
