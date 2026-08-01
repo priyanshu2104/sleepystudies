@@ -50,10 +50,20 @@ function renderSinglePageSync(pdfPath, imageDir, pageNum, pdfPassword) {
     return null;
 }
 
+const imageMemoryCache = new Map();
+const MAX_IMAGE_CACHE = 100; // Keep up to 100 recent pages in RAM
+
 // Serve generated images (Auto-decrypted & Auto-generated on demand for website viewers)
 app.use("/images", (req, res, next) => {
     try {
         const decodedPath = decodeURIComponent(req.path);
+
+        if (imageMemoryCache.has(decodedPath)) {
+            res.setHeader("Content-Type", "image/png");
+            res.setHeader("Cache-Control", "public, max-age=86400, immutable");
+            return res.end(imageMemoryCache.get(decodedPath));
+        }
+
         const candidatePaths = [
             path.join(__dirname, "images", decodedPath),
             path.join(__dirname, "..", "images", decodedPath),
@@ -101,6 +111,12 @@ app.use("/images", (req, res, next) => {
             const rawBytes = fs.readFileSync(targetPath);
             const decryptedBytes = decryptImageBuffer(rawBytes);
 
+            if (imageMemoryCache.size >= MAX_IMAGE_CACHE) {
+                const firstKey = imageMemoryCache.keys().next().value;
+                imageMemoryCache.delete(firstKey);
+            }
+            imageMemoryCache.set(decodedPath, decryptedBytes);
+
             // Trigger background pre-render of next 2 pages asynchronously
             if (pdfPath && imageDir && pageNum !== null) {
                 setImmediate(() => {
@@ -110,6 +126,7 @@ app.use("/images", (req, res, next) => {
             }
 
             res.setHeader("Content-Type", "image/png");
+            res.setHeader("Cache-Control", "public, max-age=86400, immutable");
             return res.end(decryptedBytes);
         }
     } catch (e) {

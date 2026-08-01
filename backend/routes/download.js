@@ -5,6 +5,7 @@ const fs = require("fs");
 const { PDFDocument, rgb, StandardFonts, degrees } = require("pdf-lib");
 const { recordDownload } = require("../services/downloadService");
 const { getDecryptedPdfBytes } = require("../utils/pdfDecryptor");
+const { ensureViewerExists } = require("../services/viewerService");
 
 const router = express.Router();
 
@@ -26,18 +27,20 @@ router.get("/:semester/:folder/:file", async (req, res) => {
             return res.status(404).json({ error: "File not found" });
         }
 
-        const { ensureViewerExists } = require("../services/viewerService");
-        const viewer = await ensureViewerExists(viewerId, name, req);
-
-        await recordDownload({
-            viewerId: viewerId || null,
-            name: viewer ? viewer.name : name || null,
-            semester,
-            subject: folder,
-            note: file,
-            ip: req.headers["x-forwarded-for"] || req.socket.remoteAddress,
-            browser: req.headers["user-agent"],
-        });
+        // Fire database logging asynchronously in background (non-blocking)
+        ensureViewerExists(viewerId, name, req)
+            .then(viewer => {
+                recordDownload({
+                    viewerId: viewerId || null,
+                    name: viewer ? viewer.name : name || null,
+                    semester,
+                    subject: folder,
+                    note: file,
+                    ip: req.headers["x-forwarded-for"] || req.socket.remoteAddress,
+                    browser: req.headers["user-agent"],
+                }).catch(e => console.error("Async recordDownload error:", e.message));
+            })
+            .catch(e => console.error("Async ensureViewerExists error:", e.message));
 
         const password = process.env.PDF_SECRET_PASSWORD || "SleepyStudiesSecurityPass2026";
         const decryptedBytes = await getDecryptedPdfBytes(pdfPath, password);
@@ -47,12 +50,15 @@ router.get("/:semester/:folder/:file", async (req, res) => {
         const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
         const pages = pdfDoc.getPages();
 
-        const rawName = viewer ? viewer.name : (name || "Guest Student");
+        const rawName = name || "Guest Student";
         const studentName = rawName.length > 25 ? rawName.substring(0, 22) + "..." : rawName;
-        const studentId = viewerId || (viewer ? viewer.id : "ANON");
+        const studentId = viewerId || "ANON";
         const dateStr = new Date().toISOString().split("T")[0];
 
         const watermarkText = `Downloaded by: ${studentName} (ID: ${studentId}) | Date: ${dateStr} | SleepyStudies • https://sleepystudies.vercel.app`;
+
+        // Cache font size calculations per page layout dimension
+        const fontLayoutCache = new Map();
 
         pages.forEach((page) => {
             const { width: pageW, height: pageH } = page.getSize();
@@ -62,15 +68,23 @@ router.get("/:semester/:folder/:file", async (req, res) => {
             const visWidth = isRotated90or270 ? pageH : pageW;
             const visHeight = isRotated90or270 ? pageW : pageH;
 
-            const maxTextWidth = visWidth - 40;
-            let fontSize = 10.5;
-            let textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
-            while (textWidth > maxTextWidth && fontSize > 5.5) {
-                fontSize -= 0.5;
-                textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
+            const layoutKey = `${visWidth}_${rot}`;
+            let layout = fontLayoutCache.get(layoutKey);
+
+            if (!layout) {
+                const maxTextWidth = visWidth - 40;
+                let fontSize = 10.5;
+                let textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
+                while (textWidth > maxTextWidth && fontSize > 5.5) {
+                    fontSize -= 0.5;
+                    textWidth = font.widthOfTextAtSize(watermarkText, fontSize);
+                }
+                const startX = Math.max(15, (visWidth - textWidth) / 2);
+                layout = { fontSize, textWidth, startX };
+                fontLayoutCache.set(layoutKey, layout);
             }
 
-            const startX = Math.max(15, (visWidth - textWidth) / 2);
+            const { fontSize, textWidth, startX } = layout;
             const startY = 20;
 
             try {
@@ -142,9 +156,7 @@ router.get("/:semester/:folder/:file", async (req, res) => {
                         rotate: degrees(270),
                     });
                 }
-            } catch (wErr) {
-                console.error("Failed to watermark page:", wErr);
-            }
+            } catch (wErr) {}
         });
 
         const pdfBytes = await pdfDoc.save();

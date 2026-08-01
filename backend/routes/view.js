@@ -64,28 +64,28 @@ router.get("/:semester/:folder/:file", async (req, res) => {
     }
 });
 
-router.post("/record", async (req, res) => {
-    try {
-        const { viewerId, name, subject, note } = req.body;
-        const { ensureViewerExists } = require("../services/viewerService");
-        const viewer = await ensureViewerExists(viewerId, name, req);
+router.post("/record", (req, res) => {
+    const { viewerId, name, subject, note } = req.body;
+    res.json({ success: true });
 
-        await recordView({
-            viewerId: viewerId || null,
-            name: viewer ? viewer.name : name || null,
-            subject,
-            note,
-            ip:
-                req.headers["x-forwarded-for"] ||
-                req.socket.remoteAddress,
-            browser: req.headers["user-agent"],
-        });
+    // Background asynchronous logging (non-blocking)
+    setImmediate(async () => {
+        try {
+            const { ensureViewerExists } = require("../services/viewerService");
+            const viewer = await ensureViewerExists(viewerId, name, req);
 
-        res.json({ success: true });
-    } catch (err) {
-        console.error("Failed to record view:", err);
-        res.status(500).json({ error: "Failed to record view" });
-    }
+            await recordView({
+                viewerId: viewerId || null,
+                name: viewer ? viewer.name : name || null,
+                subject,
+                note,
+                ip: req.headers["x-forwarded-for"] || req.socket.remoteAddress,
+                browser: req.headers["user-agent"],
+            });
+        } catch (err) {
+            console.error("Async recordView error:", err.message);
+        }
+    });
 });
 
 module.exports = router;
