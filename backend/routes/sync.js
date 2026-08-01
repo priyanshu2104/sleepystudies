@@ -145,4 +145,28 @@ router.post("/upload", checkAdminKey, async (req, res) => {
     }
 });
 
+// POST /api/sync/reset-analytics
+// Admin route to wipe MongoDB Atlas collections to 0 for a fresh launch
+router.post("/reset-analytics", checkAdminKey, async (req, res) => {
+    try {
+        const { getIsConnected } = require("../config/db");
+        const View = require("../models/View");
+        const Download = require("../models/Download");
+        const Viewer = require("../models/Viewer");
+
+        if (getIsConnected()) {
+            await View.deleteMany({});
+            await Download.deleteMany({});
+            await Viewer.deleteMany({});
+            console.log("🧹 MongoDB Atlas wiped to 0 via Admin API.");
+            return res.json({ success: true, message: "MongoDB Atlas analytics reset to 0" });
+        } else {
+            return res.status(400).json({ error: "MongoDB is not connected on server" });
+        }
+    } catch (err) {
+        console.error("Failed to reset MongoDB analytics:", err);
+        res.status(500).json({ error: "Failed to reset MongoDB analytics" });
+    }
+});
+
 module.exports = router;
