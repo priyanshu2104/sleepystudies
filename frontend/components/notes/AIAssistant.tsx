@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sparkles, Send, Bot, User, X, Check, Copy, HelpCircle, BookOpen, Loader2 } from "lucide-react";
 import { API_URL } from "@/utils/api";
 
@@ -13,7 +13,6 @@ type Props = {
 function renderFormattedContent(content: string) {
     if (!content) return null;
 
-    // Clean up raw LaTeX math syntax like $$\text{move}(U, a)$$ -> move(U, a)
     let cleaned = content.replace(/\$\$\\text\{([^}]+)\}([^$]*)\$\$/g, "$1$2");
     cleaned = cleaned.replace(/\$\$([^$]+)\$\$/g, "$1");
     cleaned = cleaned.replace(/\\text\{([^}]+)\}/g, "$1");
@@ -26,7 +25,6 @@ function renderFormattedContent(content: string) {
     lines.forEach((line, index) => {
         const trimmed = line.trim();
 
-        // Handle Code Blocks ```
         if (trimmed.startsWith("```")) {
             if (inCodeBlock) {
                 elements.push(
@@ -47,7 +45,6 @@ function renderFormattedContent(content: string) {
             return;
         }
 
-        // Handle Headers
         if (trimmed.startsWith("### ")) {
             elements.push(
                 <h3 key={`h3-${index}`} className="text-sm sm:text-base font-extrabold text-purple-600 dark:text-purple-400 mt-4 mb-2 border-b border-purple-100 dark:border-purple-900/50 pb-1 flex items-center gap-1.5 break-words max-w-full">
@@ -71,7 +68,6 @@ function renderFormattedContent(content: string) {
             return;
         }
 
-        // Handle Bullet Points
         if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || /^\d+\.\s/.test(trimmed)) {
             const formattedText = renderInlineFormatting(trimmed);
             elements.push(
@@ -83,13 +79,11 @@ function renderFormattedContent(content: string) {
             return;
         }
 
-        // Empty line spacer
         if (trimmed === "") {
             elements.push(<div key={`space-${index}`} className="h-2" />);
             return;
         }
 
-        // Standard Paragraph
         elements.push(
             <p key={`p-${index}`} className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed my-1 break-words min-w-0 max-w-full">
                 {renderInlineFormatting(line)}
@@ -101,7 +95,6 @@ function renderFormattedContent(content: string) {
 }
 
 function renderInlineFormatting(text: string): React.ReactNode {
-    // Replace **bold** and `code` tags with clean HTML components
     const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
 
     return parts.map((part, i) => {
@@ -130,19 +123,96 @@ export default function AIAssistant({ semester, subject, note }: Props) {
     const [response, setResponse] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
 
+    // Viewer Identity state
+    const [registeredName, setRegisteredName] = useState<string>("");
+    const [viewerId, setViewerId] = useState<string>("");
+    const [nameInput, setNameInput] = useState<string>("");
+    const [registering, setRegistering] = useState<boolean>(false);
+
     const subjectDisplay = (subject || "").replace(/-/g, " ").toUpperCase();
     const noteDisplay = (note || "").replace(".pdf", "").replace(/-/g, " ");
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            try {
+                const viewerRaw = localStorage.getItem("viewer");
+                if (viewerRaw) {
+                    const parsed = JSON.parse(viewerRaw);
+                    if (parsed.name && parsed.name.trim() !== "") {
+                        setRegisteredName(parsed.name);
+                        setViewerId(parsed.viewerId || parsed.id || "");
+                    }
+                }
+            } catch (e) {}
+        }
+    }, [isOpen]);
+
+    const handleRegisterName = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const trimmed = nameInput.trim();
+        if (!trimmed) return;
+
+        setRegistering(true);
+        try {
+            const res = await fetch(`${API_URL}/viewer`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: trimmed }),
+            });
+
+            let vId = crypto.randomUUID().slice(0, 8).toUpperCase();
+            if (res.ok) {
+                const data = await res.json();
+                if (data.viewerId) vId = data.viewerId;
+            }
+
+            const viewerObj = {
+                name: trimmed,
+                viewerId: vId,
+                id: vId,
+                createdAt: new Date().toISOString(),
+            };
+
+            localStorage.setItem("viewer", JSON.stringify(viewerObj));
+            setRegisteredName(trimmed);
+            setViewerId(vId);
+        } catch (err) {
+            const fallbackId = crypto.randomUUID().slice(0, 8).toUpperCase();
+            const viewerObj = {
+                name: trimmed,
+                viewerId: fallbackId,
+                id: fallbackId,
+                createdAt: new Date().toISOString(),
+            };
+            localStorage.setItem("viewer", JSON.stringify(viewerObj));
+            setRegisteredName(trimmed);
+            setViewerId(fallbackId);
+        } finally {
+            setRegistering(false);
+        }
+    };
 
     const handleAsk = async (customPrompt?: string, mode?: string) => {
         const queryText = customPrompt || prompt;
         if (!queryText && !mode) return;
 
-        setPrompt(""); // Immediately clear text input
+        setPrompt("");
         setLoading(true);
         setResponse(null);
 
-        const viewerId = typeof window !== "undefined" ? localStorage.getItem("viewer_id") || "anonymous" : "anonymous";
-        const viewerName = typeof window !== "undefined" ? localStorage.getItem("viewer_name") || "Anonymous Student" : "Anonymous Student";
+        let activeViewerId = viewerId;
+        let activeViewerName = registeredName;
+
+        if (!activeViewerName && typeof window !== "undefined") {
+            try {
+                const viewerRaw = localStorage.getItem("viewer");
+                if (viewerRaw) {
+                    const parsed = JSON.parse(viewerRaw);
+                    activeViewerId = parsed.viewerId || parsed.id || activeViewerId;
+                    activeViewerName = parsed.name || activeViewerName;
+                }
+            } catch (e) {}
+        }
 
         try {
             const res = await fetch(`${API_URL}/api/ai/ask`, {
@@ -156,8 +226,8 @@ export default function AIAssistant({ semester, subject, note }: Props) {
                     note,
                     prompt: queryText,
                     mode,
-                    viewerId,
-                    viewerName,
+                    viewerId: activeViewerId || "anonymous",
+                    viewerName: activeViewerName || "Anonymous Student",
                 }),
             });
 
@@ -216,7 +286,7 @@ export default function AIAssistant({ semester, subject, note }: Props) {
                                         </span>
                                     </div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 font-medium line-clamp-1">
-                                        {subjectDisplay} • {noteDisplay}
+                                        {subjectDisplay} • {noteDisplay} {registeredName ? `• ${registeredName}` : ""}
                                     </p>
                                 </div>
                             </div>
@@ -229,110 +299,144 @@ export default function AIAssistant({ semester, subject, note }: Props) {
                             </button>
                         </div>
 
-                        {/* Quick Prompts Bar */}
-                        <div className="flex items-center gap-2 px-6 py-3 bg-slate-100/50 dark:bg-slate-950/50 border-b border-slate-200/60 dark:border-slate-800/60 overflow-x-auto custom-scrollbar">
-                            <button
-                                onClick={() => handleAsk(undefined, "summary")}
-                                disabled={loading}
-                                className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-purple-500 dark:hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 transition-all cursor-pointer disabled:opacity-50"
-                            >
-                                <BookOpen size={13} className="text-purple-500" />
-                                Summarize Module
-                            </button>
-                            <button
-                                onClick={() => handleAsk(undefined, "questions")}
-                                disabled={loading}
-                                className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-indigo-500 dark:hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all cursor-pointer disabled:opacity-50"
-                            >
-                                <HelpCircle size={13} className="text-indigo-500" />
-                                5 Exam Questions
-                            </button>
-                        </div>
-
-                        {/* Conversation Body */}
-                        <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4 min-w-0 max-w-full">
-                            {!response && !loading && (
-                                <div className="flex flex-col items-center justify-center h-full text-center p-6 text-slate-400 dark:text-slate-500">
-                                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-50 dark:bg-slate-800 text-purple-600 dark:text-purple-400 mb-4">
-                                        <Sparkles size={32} />
-                                    </div>
-                                    <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
-                                        Ask Anything About This Study Note
-                                    </h3>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mt-1 font-medium">
-                                        Click a quick prompt above or type your question below to get instant AI summaries, key definitions, and exam practice questions.
-                                    </p>
+                        {/* Name Registration Gate for AI Assistant */}
+                        {!registeredName ? (
+                            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/50 dark:bg-slate-950/50">
+                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-300 mb-4 shadow-md">
+                                    <User size={32} />
                                 </div>
-                            )}
-
-                            {loading && (
-                                <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                                    <Loader2 size={36} className="animate-spin text-purple-600 dark:text-purple-400 mb-3" />
-                                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                        Generating AI Study Response...
-                                    </p>
+                                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">
+                                    Enter Your Name to Unlock AI Tutor
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-2 mb-6 leading-relaxed font-medium">
+                                    Enter your student name once to access AI study summaries, practice exam questions, and custom Q&A.
+                                </p>
+                                <form onSubmit={handleRegisterName} className="w-full max-w-sm space-y-3">
+                                    <input
+                                        type="text"
+                                        value={nameInput}
+                                        onChange={(e) => setNameInput(e.target.value)}
+                                        placeholder="Your Full Name"
+                                        required
+                                        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3.5 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={registering || !nameInput.trim()}
+                                        className="w-full rounded-xl bg-purple-600 py-3.5 text-sm font-bold text-white hover:bg-purple-700 disabled:opacity-50 transition-all cursor-pointer shadow-md shadow-purple-500/20"
+                                    >
+                                        {registering ? "Registering..." : "Continue to AI Tutor"}
+                                    </button>
+                                </form>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Quick Prompts Bar */}
+                                <div className="flex items-center gap-2 px-6 py-3 bg-slate-100/50 dark:bg-slate-950/50 border-b border-slate-200/60 dark:border-slate-800/60 overflow-x-auto custom-scrollbar">
+                                    <button
+                                        onClick={() => handleAsk(undefined, "summary")}
+                                        disabled={loading}
+                                        className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-purple-500 dark:hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 transition-all cursor-pointer disabled:opacity-50"
+                                    >
+                                        <BookOpen size={13} className="text-purple-500" />
+                                        Summarize Module
+                                    </button>
+                                    <button
+                                        onClick={() => handleAsk(undefined, "questions")}
+                                        disabled={loading}
+                                        className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-indigo-500 dark:hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all cursor-pointer disabled:opacity-50"
+                                    >
+                                        <HelpCircle size={13} className="text-indigo-500" />
+                                        5 Exam Questions
+                                    </button>
                                 </div>
-                            )}
 
-                            {response && !loading && (
-                                <div className="space-y-4 min-w-0 max-w-full">
-                                    <div className="flex items-start justify-between gap-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-sm min-w-0 max-w-full overflow-hidden">
-                                        <div className="flex gap-3 text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed min-w-0 max-w-full overflow-hidden flex-1">
-                                            <div className="flex-shrink-0 h-7 w-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-xs mt-0.5">
-                                                AI
+                                {/* Conversation Body */}
+                                <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4 min-w-0 max-w-full">
+                                    {!response && !loading && (
+                                        <div className="flex flex-col items-center justify-center h-full text-center p-6 text-slate-400 dark:text-slate-500">
+                                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-50 dark:bg-slate-800 text-purple-600 dark:text-purple-400 mb-4">
+                                                <Sparkles size={32} />
                                             </div>
-                                            <div className="flex-1 min-w-0 max-w-full font-sans break-words overflow-x-auto">
-                                                {renderFormattedContent(response)}
+                                            <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                                                Ask Anything About This Study Note
+                                            </h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mt-1 font-medium">
+                                                Click a quick prompt above or type your question below to get instant AI summaries, key definitions, and exam practice questions.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {loading && (
+                                        <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                                            <Loader2 size={36} className="animate-spin text-purple-600 dark:text-purple-400 mb-3" />
+                                            <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                                Generating AI Study Response...
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {response && !loading && (
+                                        <div className="space-y-4 min-w-0 max-w-full">
+                                            <div className="flex items-start justify-between gap-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-sm min-w-0 max-w-full overflow-hidden">
+                                                <div className="flex gap-3 text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed min-w-0 max-w-full overflow-hidden flex-1">
+                                                    <div className="flex-shrink-0 h-7 w-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-xs mt-0.5">
+                                                        AI
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 max-w-full font-sans break-words overflow-x-auto">
+                                                        {renderFormattedContent(response)}
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={handleCopy}
+                                                    className="flex-shrink-0 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800"
+                                                    title="Copy Answer"
+                                                >
+                                                    {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                                                </button>
                                             </div>
                                         </div>
-
-                                        <button
-                                            onClick={handleCopy}
-                                            className="flex-shrink-0 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800"
-                                            title="Copy Answer"
-                                        >
-                                            {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
-                                        </button>
-                                    </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
 
-                        {/* Chat Input Bar */}
-                        <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800">
-                            <form
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    if (prompt.trim() && !loading) {
-                                        handleAsk();
-                                    }
-                                }}
-                                className="flex items-center gap-2"
-                            >
-                                <input
-                                    type="text"
-                                    value={prompt}
-                                    onChange={(e) => setPrompt(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter" && !e.shiftKey) {
+                                {/* Chat Input Bar */}
+                                <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800">
+                                    <form
+                                        onSubmit={(e) => {
                                             e.preventDefault();
                                             if (prompt.trim() && !loading) {
                                                 handleAsk();
                                             }
-                                        }
-                                    }}
-                                    placeholder="Type your question about this note..."
-                                    className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={loading || !prompt.trim()}
-                                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 transition-colors cursor-pointer shadow-md shadow-purple-500/20"
-                                >
-                                    <Send size={18} />
-                                </button>
-                            </form>
-                        </div>
+                                        }}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <input
+                                            type="text"
+                                            value={prompt}
+                                            onChange={(e) => setPrompt(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter" && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    if (prompt.trim() && !loading) {
+                                                        handleAsk();
+                                                    }
+                                                }
+                                            }}
+                                            placeholder="Type your question about this note..."
+                                            className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-4 py-3 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={loading || !prompt.trim()}
+                                            className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 transition-colors cursor-pointer shadow-md shadow-purple-500/20"
+                                        >
+                                            <Send size={18} />
+                                        </button>
+                                    </form>
+                                </div>
+                            </>
+                        )}
 
                     </div>
                 </div>
