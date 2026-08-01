@@ -6,6 +6,7 @@ const { connectDB, getIsConnected } = require("../config/db");
 const View = require("../models/View");
 const Download = require("../models/Download");
 const Viewer = require("../models/Viewer");
+const AISearch = require("../models/AISearch");
 const { readJSON } = require("../utils/file");
 
 async function generateReport() {
@@ -24,17 +25,20 @@ async function generateReport() {
     let viewsList = [];
     let downloadsList = [];
     let viewersList = [];
+    let aiSearchesList = [];
 
     if (isDb && getIsConnected()) {
         console.log("✅ Fetching live analytics data from MongoDB Atlas...\n");
         viewsList = await View.find({}).lean();
         downloadsList = await Download.find({}).lean();
         viewersList = await Viewer.find({}).lean();
+        aiSearchesList = await AISearch.find({}).lean();
     } else {
         console.log("ℹ️ Reading analytics data from local JSON files...\n");
         viewsList = readJSON("views.json");
         downloadsList = readJSON("downloads.json");
         viewersList = readJSON("viewers.json");
+        aiSearchesList = readJSON("aisearches.json");
     }
 
     // 1. Summary Statistics
@@ -43,7 +47,8 @@ async function generateReport() {
     console.log("-------------------------------------------------");
     console.log(`👁️  Total Views:      ${viewsList.length}`);
     console.log(`📥  Total Downloads:  ${downloadsList.length}`);
-    console.log(`👤  Total Viewers:    ${viewersList.length}\n`);
+    console.log(`👤  Total Viewers:    ${viewersList.length}`);
+    console.log(`🤖  Total AI Queries: ${aiSearchesList.length}\n`);
 
     // 2. Top Viewed Notes
     const viewCounts = {};
@@ -91,7 +96,22 @@ async function generateReport() {
     }
     console.log("");
 
-    // 4. Registered Students / Viewers
+    // 4. Confidential AI Queries Analytics
+    console.log("-------------------------------------------------");
+    console.log("🤖 RECENT CONFIDENTIAL AI QUERIES");
+    console.log("-------------------------------------------------");
+    if (aiSearchesList.length === 0) {
+        console.log("   (No AI queries recorded yet)");
+    } else {
+        aiSearchesList.slice(-5).reverse().forEach((q, i) => {
+            const queryText = q.prompt ? `"${q.prompt}"` : `[Mode: ${q.mode}]`;
+            console.log(`   ${i + 1}. Note: ${q.subject}/${q.note}`);
+            console.log(`      Query: ${queryText} | IP Hash: ${q.ipHash || "anonymized"}`);
+        });
+    }
+    console.log("");
+
+    // 5. Registered Students / Viewers
     console.log("-------------------------------------------------");
     console.log("🎓 REGISTERED STUDENTS / VIEWERS");
     console.log("-------------------------------------------------");
