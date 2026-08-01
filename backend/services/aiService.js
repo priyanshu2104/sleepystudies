@@ -24,9 +24,9 @@ async function askAI({ semester, subject, note, prompt, mode }) {
     if (mode === "summary") {
         userInstruction = `Provide a high-impact, 3-to-4 bullet point executive summary of key concepts in ${noteClean} for ${subjectClean}. Include key formulas, definitions, and an exam tip. Keep it structured, clear, and encouraging.`;
     } else if (mode === "questions") {
-        userInstruction = `Generate 5 high-yield university exam questions with concise model answer pointers based on ${noteClean} in ${subjectClean}. Format using clear markdown numbers and bold questions.`;
+        userInstruction = `Generate 5 high-yield university exam questions with concise model answer pointers based on ${noteClean} in ${subjectClean}. Format using clear markdown numbers, bold subheaders, and clean spacing.`;
     } else {
-        userInstruction = `User Question: "${prompt}"\nProvide a concise, clear, and accurate academic answer tailored for a Computer Science student studying ${subjectClean}. Use markdown formatting with bullet points or code blocks if relevant.`;
+        userInstruction = `User Question: "${prompt}"\nProvide a concise, clear, and beautifully formatted academic answer tailored for a Computer Science student studying ${subjectClean}. Use markdown formatting with bold subheaders, bullet points, and code blocks if relevant.`;
     }
 
     const payload = {
@@ -34,7 +34,7 @@ async function askAI({ semester, subject, note, prompt, mode }) {
             {
                 parts: [
                     {
-                        text: `You are SleepyStudies AI, an expert academic tutor for Computer Science & Engineering students.\nSubject: ${subjectClean}\nNote: ${noteClean}\n\n${userInstruction}`
+                        text: `You are SleepyStudies AI, an expert academic tutor for Computer Science & Engineering students.\nSubject: ${subjectClean}\nNote: ${noteClean}\n\nFORMATTING RULES:\n- Use clean GitHub-style Markdown (### headers, bold labels).\n- Ensure proper line breaks between paragraphs and bullet points.\n- Format diagrams or code in fenced code blocks.\n\n${userInstruction}`
                     }
                 ]
             }
