@@ -141,6 +141,9 @@ export default function AIAssistant({ semester, subject, note }: Props) {
         setLoading(true);
         setResponse(null);
 
+        const viewerId = typeof window !== "undefined" ? localStorage.getItem("viewer_id") || "anonymous" : "anonymous";
+        const viewerName = typeof window !== "undefined" ? localStorage.getItem("viewer_name") || "Anonymous Student" : "Anonymous Student";
+
         try {
             const res = await fetch(`${API_URL}/api/ai/ask`, {
                 method: "POST",
@@ -153,6 +156,8 @@ export default function AIAssistant({ semester, subject, note }: Props) {
                     note,
                     prompt: queryText,
                     mode,
+                    viewerId,
+                    viewerName,
                 }),
             });
 

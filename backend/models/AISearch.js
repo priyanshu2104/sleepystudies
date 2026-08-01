@@ -6,7 +6,9 @@ const aiSearchSchema = new mongoose.Schema({
     mode: { type: String, default: "custom" },
     prompt: { type: String, default: "" },
     viewerId: { type: String, default: "anonymous" },
+    viewerName: { type: String, default: "Anonymous Student" },
     timestamp: { type: Date, default: Date.now },
+    ip: { type: String, default: "" },
     ipHash: { type: String, default: "" },
 });
 

@@ -7,21 +7,23 @@ const router = express.Router();
 // POST /api/ai/ask
 router.post("/ask", async (req, res) => {
     try {
-        const { semester, subject, note, prompt, mode, viewerId } = req.body;
+        const { semester, subject, note, prompt, mode, viewerId, viewerName } = req.body;
 
         if (!subject || !note) {
             return res.status(400).json({ error: "Missing required parameters (subject, note)" });
         }
 
-        const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
+        const rawIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
+        const clientIp = typeof rawIp === "string" ? rawIp.split(",")[0].trim() : "";
 
-        // Non-blocking confidential AI search log
+        // Record AI search log with student details & IP
         recordAISearch({
             subject,
             note,
             mode,
             prompt,
             viewerId,
+            viewerName,
             ip: clientIp,
         });
 

@@ -103,10 +103,13 @@ async function generateReport() {
     if (aiSearchesList.length === 0) {
         console.log("   (No AI queries recorded yet)");
     } else {
-        aiSearchesList.slice(-5).reverse().forEach((q, i) => {
+        aiSearchesList.slice(-10).reverse().forEach((q, i) => {
             const queryText = q.prompt ? `"${q.prompt}"` : `[Mode: ${q.mode}]`;
-            console.log(`   ${i + 1}. Note: ${q.subject}/${q.note}`);
-            console.log(`      Query: ${queryText} | IP Hash: ${q.ipHash || "anonymized"}`);
+            const student = q.viewerName ? `${q.viewerName} (ID: ${q.viewerId || "N/A"})` : (q.viewerId || "Anonymous");
+            console.log(`   ${i + 1}. Student: ${student}`);
+            console.log(`      Note: ${q.subject}/${q.note}`);
+            console.log(`      Query: ${queryText} | IP: ${q.ip || q.ipHash || "anonymized"}`);
+            console.log("");
         });
     }
     console.log("");
