@@ -12,47 +12,30 @@ const {
 
 } = require("../services/viewerService");
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
+    try {
+        const { name, viewerId } = req.body;
 
-    const {
-
-        name,
-
-        viewerId,
-
-    } = req.body;
-
-    if (viewerId) {
-
-        const viewer =
-            getViewer(viewerId);
-
-        if (viewer) {
-
-            updateLastVisit(viewerId);
-
-            return res.json(viewer);
-
+        if (viewerId) {
+            const viewer = await getViewer(viewerId);
+            if (viewer) {
+                await updateLastVisit(viewerId);
+                return res.json(viewer);
+            }
         }
 
+        if (!name) {
+            return res.status(400).json({
+                error: "Name required",
+            });
+        }
+
+        const viewer = await createViewer(name, req);
+        res.json(viewer);
+    } catch (err) {
+        console.error("Viewer route error:", err);
+        res.status(500).json({ error: "Failed to process viewer request" });
     }
-
-    if (!name) {
-
-        return res.status(400).json({
-
-            error:
-                "Name required",
-
-        });
-
-    }
-
-    const viewer =
-        createViewer(name, req);
-
-    res.json(viewer);
-
 });
 
 module.exports = router;

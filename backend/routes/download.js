@@ -27,9 +27,9 @@ router.get("/:semester/:folder/:file", async (req, res) => {
         }
 
         const { ensureViewerExists } = require("../services/viewerService");
-        const viewer = ensureViewerExists(viewerId, name, req);
+        const viewer = await ensureViewerExists(viewerId, name, req);
 
-        recordDownload({
+        await recordDownload({
             viewerId: viewerId || null,
             name: viewer ? viewer.name : name || null,
             semester,

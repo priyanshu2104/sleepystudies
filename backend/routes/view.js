@@ -64,13 +64,13 @@ router.get("/:semester/:folder/:file", async (req, res) => {
     }
 });
 
-router.post("/record", (req, res) => {
+router.post("/record", async (req, res) => {
     try {
         const { viewerId, name, subject, note } = req.body;
         const { ensureViewerExists } = require("../services/viewerService");
-        const viewer = ensureViewerExists(viewerId, name, req);
+        const viewer = await ensureViewerExists(viewerId, name, req);
 
-        recordView({
+        await recordView({
             viewerId: viewerId || null,
             name: viewer ? viewer.name : name || null,
             subject,
