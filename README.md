@@ -190,6 +190,7 @@ NEXT_PUBLIC_API_URL=https://sleepystudies-api.onrender.com
 2. Attach a **Persistent Disk** mounted at your `backend/data` directory to preserve analytics logs across restarts.
 3. Set the following environment variables on Render:
    ```
+   MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/sleepystudies
    ADMIN_PASSCODE=your_secure_admin_password
    PDF_SECRET_PASSWORD=your_pdf_encryption_password
    ADMIN_LOGS_KEY=your_analytics_sync_secret
