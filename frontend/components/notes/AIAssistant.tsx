@@ -137,6 +137,7 @@ export default function AIAssistant({ semester, subject, note }: Props) {
         const queryText = customPrompt || prompt;
         if (!queryText && !mode) return;
 
+        setPrompt("");
         setLoading(true);
         setResponse(null);
 
