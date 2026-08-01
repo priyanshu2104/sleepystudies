@@ -23,10 +23,13 @@ app.use("/viewer", viewerRoute);
 app.use("/search", searchRoute);
 
 const { decryptImageBuffer, encryptImageBuffer } = require("./utils/imageCrypto");
-const { execSync } = require("child_process");
+const { exec } = require("child_process");
+const util = require("util");
+const execPromise = util.promisify(exec);
 const fs = require("fs");
+const { getDecryptedPdfFilePath } = require("./utils/pdfDecryptor");
 
-function renderSinglePageSync(pdfPath, imageDir, pageNum, pdfPassword) {
+async function renderSinglePageAsync(pdfPath, imageDir, pageNum, pdfPassword) {
     const targetFile = path.join(imageDir, `page-${pageNum}.png`);
     if (fs.existsSync(targetFile)) return targetFile;
 
@@ -34,7 +37,8 @@ function renderSinglePageSync(pdfPath, imageDir, pageNum, pdfPassword) {
     const tempPrefix = path.join(imageDir, `temp_single_${pageNum}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`);
 
     try {
-        execSync(`pdftoppm -upw "${pdfPassword}" -scale-to-x 750 -scale-to-y -1 -f ${pageNum} -l ${pageNum} -png "${pdfPath}" "${tempPrefix}"`, { timeout: 8000 });
+        const decFilePath = await getDecryptedPdfFilePath(pdfPath, pdfPassword);
+        await execPromise(`pdftoppm -scale-to-x 750 -scale-to-y -1 -f ${pageNum} -l ${pageNum} -png "${decFilePath}" "${tempPrefix}"`, { timeout: 12000 });
         const genFiles = fs.readdirSync(imageDir).filter(f => f.startsWith(path.basename(tempPrefix)));
         if (genFiles.length > 0) {
             const genPath = path.join(imageDir, genFiles[0]);
@@ -51,10 +55,10 @@ function renderSinglePageSync(pdfPath, imageDir, pageNum, pdfPassword) {
 }
 
 const imageMemoryCache = new Map();
-const MAX_IMAGE_CACHE = 100; // Keep up to 100 recent pages in RAM
+const MAX_IMAGE_CACHE = 150; // Keep up to 150 recent pages in RAM
 
 // Serve generated images (Auto-decrypted & Auto-generated on demand for website viewers)
-app.use("/images", (req, res, next) => {
+app.use("/images", async (req, res, next) => {
     try {
         const decodedPath = decodeURIComponent(req.path);
 
@@ -104,7 +108,7 @@ app.use("/images", (req, res, next) => {
 
         // If image file does not exist on disk, render single page on demand
         if (!targetPath && pdfPath && imageDir && pageNum !== null) {
-            targetPath = renderSinglePageSync(pdfPath, imageDir, pageNum, pdfPassword);
+            targetPath = await renderSinglePageAsync(pdfPath, imageDir, pageNum, pdfPassword);
         }
 
         if (targetPath && fs.existsSync(targetPath)) {
@@ -117,11 +121,14 @@ app.use("/images", (req, res, next) => {
             }
             imageMemoryCache.set(decodedPath, decryptedBytes);
 
-            // Trigger background pre-render of next 2 pages asynchronously
+            // Trigger background pre-render of next 3 pages asynchronously in parallel
             if (pdfPath && imageDir && pageNum !== null) {
                 setImmediate(() => {
-                    renderSinglePageSync(pdfPath, imageDir, pageNum + 1, pdfPassword);
-                    renderSinglePageSync(pdfPath, imageDir, pageNum + 2, pdfPassword);
+                    Promise.all([
+                        renderSinglePageAsync(pdfPath, imageDir, pageNum + 1, pdfPassword),
+                        renderSinglePageAsync(pdfPath, imageDir, pageNum + 2, pdfPassword),
+                        renderSinglePageAsync(pdfPath, imageDir, pageNum + 3, pdfPassword),
+                    ]).catch(() => {});
                 });
             }
 

@@ -2,9 +2,13 @@ const fs = require("fs");
 const { decryptPDF } = require("@pdfsmaller/pdf-decrypt");
 const { execSync } = require("child_process");
 const path = require("path");
+const crypto = require("crypto");
 
 const decryptionCache = new Map();
 const MAX_CACHE_ITEMS = 30; // Limit RAM usage
+
+const tempDecDir = path.join(__dirname, "..", "temp_decrypted");
+try { fs.mkdirSync(tempDecDir, { recursive: true }); } catch (e) {}
 
 async function getDecryptedPdfBytes(pdfPath, password = "SleepyStudiesSecurityPass2026") {
     let stat;
@@ -63,4 +67,31 @@ async function getDecryptedPdfBytes(pdfPath, password = "SleepyStudiesSecurityPa
     return decryptedBytes;
 }
 
-module.exports = { getDecryptedPdfBytes };
+async function getDecryptedPdfFilePath(pdfPath, password = "SleepyStudiesSecurityPass2026") {
+    let stat;
+    try {
+        stat = fs.statSync(pdfPath);
+    } catch (e) {
+        return pdfPath;
+    }
+
+    const hash = crypto.createHash("md5").update(`${pdfPath}:${stat.mtimeMs}`).digest("hex");
+    const decFilePath = path.join(tempDecDir, `${hash}.pdf`);
+
+    if (fs.existsSync(decFilePath) && fs.statSync(decFilePath).size > 100) {
+        return decFilePath;
+    }
+
+    const bytes = await getDecryptedPdfBytes(pdfPath, password);
+    try {
+        fs.writeFileSync(decFilePath, bytes);
+        return decFilePath;
+    } catch (e) {
+        return pdfPath;
+    }
+}
+
+module.exports = {
+    getDecryptedPdfBytes,
+    getDecryptedPdfFilePath,
+};
