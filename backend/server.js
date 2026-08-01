@@ -159,8 +159,45 @@ app.get("/", (req, res) => {
     res.send("SleepyStudies Backend Running");
 });
 
+async function warmUpCatalog() {
+    console.log("🔥 Starting background catalog pre-warming...");
+    try {
+        const pdfPassword = process.env.PDF_SECRET_PASSWORD || "SleepyStudiesSecurityPass2026";
+        const pdfsDir = path.join(__dirname, "pdfs");
+        if (!fs.existsSync(pdfsDir)) return;
+
+        const semFolders = fs.readdirSync(pdfsDir);
+        for (const semFolder of semFolders) {
+            const semPath = path.join(pdfsDir, semFolder);
+            if (!fs.statSync(semPath).isDirectory()) continue;
+
+            const subjFolders = fs.readdirSync(semPath);
+            for (const subjFolder of subjFolders) {
+                const subjPath = path.join(semPath, subjFolder);
+                if (!fs.statSync(subjPath).isDirectory()) continue;
+
+                const pdfFiles = fs.readdirSync(subjPath).filter(f => f.endsWith(".pdf"));
+                for (const pdfFile of pdfFiles) {
+                    const noteSlug = pdfFile.replace(".pdf", "");
+                    const pdfPath = path.join(subjPath, pdfFile);
+                    const imageDir = path.join(__dirname, "images", semFolder, subjFolder, noteSlug);
+
+                    // Pre-render pages 1, 2, and 3 in background asynchronously
+                    renderSinglePageAsync(pdfPath, imageDir, 1, pdfPassword).catch(() => {});
+                    renderSinglePageAsync(pdfPath, imageDir, 2, pdfPassword).catch(() => {});
+                    renderSinglePageAsync(pdfPath, imageDir, 3, pdfPassword).catch(() => {});
+                }
+            }
+        }
+        console.log("⚡ Background catalog pre-warming initiated!");
+    } catch (e) {
+        console.error("Warmup error:", e.message);
+    }
+}
+
 const PORT = 5001;
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    setImmediate(warmUpCatalog);
 });
