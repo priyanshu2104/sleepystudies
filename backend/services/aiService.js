@@ -1,14 +1,12 @@
 const path = require("path");
 
-function getStructuredFallback(mode, subjectClean, noteClean, prompt, debugMsg = "") {
-    let debugInfo = debugMsg ? `\n\n*(Gemini API Status: ${debugMsg})*` : "";
-
+function getStructuredFallback(mode, subjectClean, noteClean, prompt) {
     if (mode === "summary") {
-        return `### 📚 Executive Summary: ${noteClean}${debugInfo}\n\n- **Primary Focus**: Comprehensive study notes covering core principles in **${subjectClean}**.\n- **Key Takeaways**: Detailed breakdown of theoretical definitions, algorithms, and system design.\n- **Exam Tip**: Focus on core algorithms, step-by-step proofs, and solved numerical problems.`;
+        return `### 📚 Executive Summary: ${noteClean}\n\n- **Primary Focus**: Comprehensive study notes covering core principles in **${subjectClean}**.\n- **Key Takeaways**: Detailed breakdown of theoretical definitions, algorithms, and system design.\n- **Exam Tip**: Focus on core algorithms, step-by-step proofs, and solved numerical problems.`;
     } else if (mode === "questions") {
-        return `### ❓ High-Yield Exam Questions: ${noteClean}${debugInfo}\n\n1. **Q1**: Explain the fundamental working principles of ${subjectClean}.\n   - *Ans*: Review key definitions and block diagrams.\n2. **Q2**: Differentiate between primary algorithms and their time complexity trade-offs.\n   - *Ans*: Analyze asymptotic bounds and memory footprints.\n3. **Q3**: What are the most common edge cases in algorithm design for this topic?\n   - *Ans*: Examine boundary conditions and error handling.`;
+        return `### ❓ High-Yield Exam Questions: ${noteClean}\n\n1. **Q1**: Explain the fundamental working principles of ${subjectClean}.\n   - *Ans*: Review key definitions and block diagrams.\n2. **Q2**: Differentiate between primary algorithms and their time complexity trade-offs.\n   - *Ans*: Analyze asymptotic bounds and memory footprints.\n3. **Q3**: What are the most common edge cases in algorithm design for this topic?\n   - *Ans*: Examine boundary conditions and error handling.`;
     } else {
-        return `### 💡 AI Tutor Insight on "${prompt || "Study Material"}"${debugInfo}\n\nFor **${subjectClean}** (${noteClean}):\n- Understand the underlying data structures and execution flow.\n- Refer to verified textbook references in the study note for step-by-step examples.`;
+        return `### 💡 AI Tutor Insight on "${prompt || "Study Material"}"\n\nFor **${subjectClean}** (${noteClean}):\n- Understand the underlying data structures and execution flow.\n- Refer to verified textbook references in the study note for step-by-step examples.`;
     }
 }
 
@@ -19,7 +17,7 @@ async function askAI({ semester, subject, note, prompt, mode }) {
 
     if (!apiKey) {
         console.log("ℹ️ GEMINI_API_KEY is not set in environment variables.");
-        return getStructuredFallback(mode, subjectClean, noteClean, prompt, "API key not configured");
+        return getStructuredFallback(mode, subjectClean, noteClean, prompt);
     }
 
     let userInstruction = "";
@@ -44,20 +42,21 @@ async function askAI({ semester, subject, note, prompt, mode }) {
     };
 
     const modelsToTry = [
+        "gemini-flash-latest",
         "gemini-2.0-flash",
         "gemini-2.0-flash-lite",
-        "gemini-2.5-pro",
         "gemini-1.5-flash"
     ];
 
-    let lastError = "";
-
     for (const modelName of modelsToTry) {
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
             const res = await fetch(url, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-goog-api-key": apiKey
+                },
                 body: JSON.stringify(payload)
             });
 
@@ -69,16 +68,14 @@ async function askAI({ semester, subject, note, prompt, mode }) {
                 }
             } else {
                 const errJson = await res.json().catch(() => ({}));
-                lastError = errJson?.error?.message || `HTTP ${res.status}`;
-                console.error(`Gemini API ${modelName} HTTP ${res.status}:`, lastError);
+                console.error(`Gemini API ${modelName} HTTP ${res.status}:`, JSON.stringify(errJson));
             }
         } catch (err) {
-            lastError = err.message;
             console.error(`Fetch error with model ${modelName}:`, err.message);
         }
     }
 
-    return getStructuredFallback(mode, subjectClean, noteClean, prompt, lastError);
+    return getStructuredFallback(mode, subjectClean, noteClean, prompt);
 }
 
 module.exports = {
