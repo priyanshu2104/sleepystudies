@@ -87,20 +87,34 @@ Returns dynamic catalog statistics (total subjects, total notes, total views, to
 */
 router.get("/overall-stats", async (req, res) => {
     try {
+        const { getIsConnected } = require("../config/db");
+        const View = require("../models/View");
+        const Download = require("../models/Download");
         const { readJSON } = require("../utils/file");
-        const viewsCount = readJSON("views.json").length;
-        const downloadsCount = readJSON("downloads.json").length;
 
-        // Load non-sensitive public baseline stats for Render restarts
-        let baseViews = 0;
-        let baseDownloads = 0;
-        const baselinePath = path.join(__dirname, "..", "config", "baseline.json");
-        if (await fs.pathExists(baselinePath)) {
-            try {
-                const baseline = await fs.readJson(baselinePath);
-                baseViews = baseline.baseViews || 0;
-                baseDownloads = baseline.baseDownloads || 0;
-            } catch (e) {}
+        let computedViews = 0;
+        let computedDownloads = 0;
+
+        if (getIsConnected()) {
+            computedViews = await View.countDocuments();
+            computedDownloads = await Download.countDocuments();
+        } else {
+            const viewsCount = readJSON("views.json").length;
+            const downloadsCount = readJSON("downloads.json").length;
+
+            let baseViews = 0;
+            let baseDownloads = 0;
+            const baselinePath = path.join(__dirname, "..", "config", "baseline.json");
+            if (await fs.pathExists(baselinePath)) {
+                try {
+                    const baseline = await fs.readJson(baselinePath);
+                    baseViews = baseline.baseViews || 0;
+                    baseDownloads = baseline.baseDownloads || 0;
+                } catch (e) {}
+            }
+
+            computedViews = (viewsCount >= baseViews && baseViews > 0) ? viewsCount : (baseViews + viewsCount);
+            computedDownloads = (downloadsCount >= baseDownloads && baseDownloads > 0) ? downloadsCount : (baseDownloads + downloadsCount);
         }
 
         let totalSubjects = 0;
@@ -129,9 +143,6 @@ router.get("/overall-stats", async (req, res) => {
                 }
             }
         }
-
-        const computedViews = (viewsCount >= baseViews && baseViews > 0) ? viewsCount : (baseViews + viewsCount);
-        const computedDownloads = (downloadsCount >= baseDownloads && baseDownloads > 0) ? downloadsCount : (baseDownloads + downloadsCount);
 
         res.json({
             subjects: totalSubjects,
@@ -166,19 +177,29 @@ router.get("/:semester/:subject", async (req, res) => {
     const files = (await fs.readdir(folder))
         .filter(file => file.endsWith(".pdf"));
 
+    const { getIsConnected } = require("../config/db");
+    const View = require("../models/View");
+    const Download = require("../models/Download");
     const { readJSON } = require("../utils/file");
-    const viewsList = readJSON("views.json");
-    const downloadsList = readJSON("downloads.json");
 
+    const isDb = getIsConnected();
+    let viewsList = [];
+    let downloadsList = [];
     let fileViewsMap = {};
     let fileDownloadsMap = {};
-    const baselinePath = path.join(__dirname, "..", "config", "baseline.json");
-    if (await fs.pathExists(baselinePath)) {
-        try {
-            const baseline = await fs.readJson(baselinePath);
-            fileViewsMap = baseline.fileViews || {};
-            fileDownloadsMap = baseline.fileDownloads || {};
-        } catch (e) {}
+
+    if (!isDb) {
+        viewsList = readJSON("views.json");
+        downloadsList = readJSON("downloads.json");
+
+        const baselinePath = path.join(__dirname, "..", "config", "baseline.json");
+        if (await fs.pathExists(baselinePath)) {
+            try {
+                const baseline = await fs.readJson(baselinePath);
+                fileViewsMap = baseline.fileViews || {};
+                fileDownloadsMap = baseline.fileDownloads || {};
+            } catch (e) {}
+        }
     }
 
     const protocol = req.headers["x-forwarded-proto"] || "http";
@@ -187,19 +208,31 @@ router.get("/:semester/:subject", async (req, res) => {
 
     const notes = await Promise.all(files.map(async file => {
         const noteSlug = file.replace(".pdf", "");
-        const imageDir = path.join(__dirname, "..", "images", semester, subject, noteSlug);
-        
         const thumbnail = `${baseUrl}/images/${semester}/${subject}/${noteSlug}/page-1.png`;
 
-        const fileKey = `${semester}/${subject}/${file}`;
-        const baseV = fileViewsMap[fileKey] || 0;
-        const baseD = fileDownloadsMap[fileKey] || 0;
+        let finalViews = 0;
+        let finalDownloads = 0;
 
-        const currentViews = viewsList.filter(v => (v.subject === subject || v.subject === `${semester}/${subject}`) && v.note === file).length;
-        const currentDownloads = downloadsList.filter(d => (d.subject === subject || d.subject === `${semester}/${subject}`) && d.note === file).length;
+        if (isDb) {
+            finalViews = await View.countDocuments({
+                $or: [{ subject }, { subject: `${semester}/${subject}` }],
+                note: file,
+            });
+            finalDownloads = await Download.countDocuments({
+                $or: [{ subject }, { subject: `${semester}/${subject}` }],
+                note: file,
+            });
+        } else {
+            const fileKey = `${semester}/${subject}/${file}`;
+            const baseV = fileViewsMap[fileKey] || 0;
+            const baseD = fileDownloadsMap[fileKey] || 0;
 
-        const finalViews = (currentViews >= baseV && baseV > 0) ? currentViews : (baseV + currentViews);
-        const finalDownloads = (currentDownloads >= baseD && baseD > 0) ? currentDownloads : (baseD + currentDownloads);
+            const currentViews = viewsList.filter(v => (v.subject === subject || v.subject === `${semester}/${subject}`) && v.note === file).length;
+            const currentDownloads = downloadsList.filter(d => (d.subject === subject || d.subject === `${semester}/${subject}`) && d.note === file).length;
+
+            finalViews = (currentViews >= baseV && baseV > 0) ? currentViews : (baseV + currentViews);
+            finalDownloads = (currentDownloads >= baseD && baseD > 0) ? currentDownloads : (baseD + currentDownloads);
+        }
 
         return {
             title: formatNoteTitle(file),

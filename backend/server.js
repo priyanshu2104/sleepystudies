@@ -10,7 +10,12 @@ const viewerRoute = require("./routes/viewer");
 const searchRoute = require("./routes/search");
 const uploadRoute = require("./routes/upload");
 
+const { connectDB } = require("./config/db");
+
 const app = express();
+
+// Initialize Cloud DB Connection (if MONGODB_URI is provided)
+connectDB();
 
 app.use(cors());
 app.use(express.json());
