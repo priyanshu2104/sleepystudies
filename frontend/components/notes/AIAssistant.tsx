@@ -378,7 +378,7 @@ export default function AIAssistant({ semester, subject, note }: Props) {
 
                                     {response && !loading && (
                                         <div className="space-y-4 min-w-0 max-w-full">
-                                            <div className="flex items-start justify-between gap-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-sm min-w-0 max-w-full overflow-hidden">
+                                            <div className="flex items-start justify-between gap-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-sm min-w-0 max-w-full overflow-y-auto max-h-[60vh]">
                                                 <div className="flex gap-3 text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed min-w-0 max-w-full overflow-hidden flex-1">
                                                     <div className="flex-shrink-0 h-7 w-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-xs mt-0.5">
                                                         AI

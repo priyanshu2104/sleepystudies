@@ -1,6 +1,21 @@
 {
-    "baseViews": 0,
-    "baseDownloads": 0,
-    "fileViews": {},
-    "fileDownloads": {}
+  "baseViews": 21,
+  "baseDownloads": 1,
+  "fileViews": {
+    "semester-5/compiler-design/module-iii-jaipur.pdf": 1,
+    "semester-5/software-engineering/book-pressman.pdf": 1,
+    "semester-5/data-mining-concepts-and-techniques/module-ii.pdf": 3,
+    "semester-5/software-engineering/book-rajib-mall.pdf": 1,
+    "semester-5/data-mining-concepts-and-techniques/module-i.pdf": 2,
+    "semester-5/data-mining-concepts-and-techniques/module-iii.pdf": 2,
+    "semester-5/artificial-intelligence/module-i.pdf": 1,
+    "semester-5/artificial-intelligence/module-ii.pdf": 3,
+    "semester-5/compiler-design/module-i-mesra.pdf": 2,
+    "semester-5/compiler-design/module-iii-mesra.pdf": 3,
+    "semester-5/compiler-design/module-i-jaipur.pdf": 1,
+    "semester-5/data-communication-and-computer-networks/module-i.pdf": 1
+  },
+  "fileDownloads": {
+    "semester-5/compiler-design/module-i-jaipur.pdf": 1
+  }
 }
