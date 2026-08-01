@@ -27,7 +27,7 @@ export default function SubjectGrid() {
         async function fetchSemesters() {
             try {
                 const res = await fetch(`${API_URL}/notes`, {
-                    cache: "no-store",
+                    next: { revalidate: 30 },
                 });
                 if (res.ok) {
                     const data = await res.json();

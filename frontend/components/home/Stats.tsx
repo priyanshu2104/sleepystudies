@@ -24,7 +24,7 @@ export default function Stats() {
         async function fetchStats() {
             try {
                 const res = await fetch(`${API_URL}/notes/overall-stats`, {
-                    cache: "no-store",
+                    next: { revalidate: 10 },
                 });
                 if (res.ok) {
                     const data = await res.json();

@@ -16,7 +16,7 @@ async function getNotes(semester: string, slug: string) {
         const res = await fetch(
             `${API_URL}/notes/${semester}/${slug}`,
             {
-                cache: "no-store",
+                next: { revalidate: 10 },
             }
         );
 

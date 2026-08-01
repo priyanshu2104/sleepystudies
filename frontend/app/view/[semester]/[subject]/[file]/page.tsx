@@ -19,7 +19,7 @@ export default async function ViewPage({
     const response = await fetch(
         `${API_URL}/view/${semester}/${subject}/${file}`,
         {
-            cache: "no-store",
+            next: { revalidate: 10 },
         }
     );
 

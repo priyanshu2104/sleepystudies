@@ -176,6 +176,7 @@ export default function PDFViewer({ pages }: Props) {
                         height={1400}
                         draggable={false}
                         unoptimized
+                        priority
                         className="rounded-xl shadow-2xl border border-slate-800 select-none pointer-events-none w-full h-auto"
                     />
 
