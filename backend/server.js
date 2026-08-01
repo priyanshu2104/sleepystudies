@@ -121,14 +121,13 @@ app.use("/images", async (req, res, next) => {
             }
             imageMemoryCache.set(decodedPath, decryptedBytes);
 
-            // Trigger background pre-render of next 3 pages asynchronously in parallel
+            // Trigger background pre-render of next 2 pages sequentially
             if (pdfPath && imageDir && pageNum !== null) {
-                setImmediate(() => {
-                    Promise.all([
-                        renderSinglePageAsync(pdfPath, imageDir, pageNum + 1, pdfPassword),
-                        renderSinglePageAsync(pdfPath, imageDir, pageNum + 2, pdfPassword),
-                        renderSinglePageAsync(pdfPath, imageDir, pageNum + 3, pdfPassword),
-                    ]).catch(() => {});
+                setImmediate(async () => {
+                    try {
+                        await renderSinglePageAsync(pdfPath, imageDir, pageNum + 1, pdfPassword);
+                        await renderSinglePageAsync(pdfPath, imageDir, pageNum + 2, pdfPassword);
+                    } catch (e) {}
                 });
             }
 
@@ -182,14 +181,12 @@ async function warmUpCatalog() {
                     const pdfPath = path.join(subjPath, pdfFile);
                     const imageDir = path.join(__dirname, "images", semFolder, subjFolder, noteSlug);
 
-                    // Pre-render pages 1, 2, and 3 in background asynchronously
-                    renderSinglePageAsync(pdfPath, imageDir, 1, pdfPassword).catch(() => {});
-                    renderSinglePageAsync(pdfPath, imageDir, 2, pdfPassword).catch(() => {});
-                    renderSinglePageAsync(pdfPath, imageDir, 3, pdfPassword).catch(() => {});
+                    // Pre-render page 1 sequentially to keep memory lightweight (<150MB RAM)
+                    await renderSinglePageAsync(pdfPath, imageDir, 1, pdfPassword).catch(() => {});
                 }
             }
         }
-        console.log("⚡ Background catalog pre-warming initiated!");
+        console.log("⚡ Sequential background catalog warm-up complete!");
     } catch (e) {
         console.error("Warmup error:", e.message);
     }
