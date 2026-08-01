@@ -10,6 +10,119 @@ type Props = {
     note: string;
 };
 
+function renderFormattedContent(content: string) {
+    if (!content) return null;
+
+    // Clean up raw LaTeX math syntax like $$\text{move}(U, a)$$ -> move(U, a)
+    let cleaned = content.replace(/\$\$\\text\{([^}]+)\}([^$]*)\$\$/g, "$1$2");
+    cleaned = cleaned.replace(/\$\$([^$]+)\$\$/g, "$1");
+    cleaned = cleaned.replace(/\\text\{([^}]+)\}/g, "$1");
+
+    const lines = cleaned.split("\n");
+    const elements: React.ReactNode[] = [];
+    let inCodeBlock = false;
+    let codeBlockLines: string[] = [];
+
+    lines.forEach((line, index) => {
+        const trimmed = line.trim();
+
+        // Handle Code Blocks ```
+        if (trimmed.startsWith("```")) {
+            if (inCodeBlock) {
+                elements.push(
+                    <pre key={`code-${index}`} className="my-2 p-3 bg-slate-950 text-slate-100 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800 shadow-inner">
+                        <code>{codeBlockLines.join("\n")}</code>
+                    </pre>
+                );
+                codeBlockLines = [];
+                inCodeBlock = false;
+            } else {
+                inCodeBlock = true;
+            }
+            return;
+        }
+
+        if (inCodeBlock) {
+            codeBlockLines.push(line);
+            return;
+        }
+
+        // Handle Headers
+        if (trimmed.startsWith("### ")) {
+            elements.push(
+                <h3 key={`h3-${index}`} className="text-sm sm:text-base font-extrabold text-purple-600 dark:text-purple-400 mt-4 mb-2 border-b border-purple-100 dark:border-purple-900/50 pb-1 flex items-center gap-1.5">
+                    {trimmed.replace("### ", "")}
+                </h3>
+            );
+            return;
+        }
+
+        if (trimmed.startsWith("#### ")) {
+            elements.push(
+                <h4 key={`h4-${index}`} className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-3 mb-1">
+                    {trimmed.replace("#### ", "")}
+                </h4>
+            );
+            return;
+        }
+
+        if (trimmed.startsWith("---")) {
+            elements.push(<hr key={`hr-${index}`} className="my-3 border-slate-200 dark:border-slate-800" />);
+            return;
+        }
+
+        // Handle Bullet Points
+        if (trimmed.startsWith("- ") || trimmed.startsWith("* ") || /^\d+\.\s/.test(trimmed)) {
+            const formattedText = renderInlineFormatting(trimmed);
+            elements.push(
+                <div key={`bullet-${index}`} className="flex items-start gap-2 my-1 pl-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                    <span className="text-purple-500 font-bold mt-0.5">•</span>
+                    <span className="flex-1 leading-relaxed">{formattedText}</span>
+                </div>
+            );
+            return;
+        }
+
+        // Empty line spacer
+        if (trimmed === "") {
+            elements.push(<div key={`space-${index}`} className="h-2" />);
+            return;
+        }
+
+        // Standard Paragraph
+        elements.push(
+            <p key={`p-${index}`} className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed my-1">
+                {renderInlineFormatting(line)}
+            </p>
+        );
+    });
+
+    return elements;
+}
+
+function renderInlineFormatting(text: string): React.ReactNode {
+    // Replace **bold** and `code` tags with clean HTML components
+    const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+
+    return parts.map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+            return (
+                <strong key={i} className="font-semibold text-slate-900 dark:text-white">
+                    {part.slice(2, -2)}
+                </strong>
+            );
+        }
+        if (part.startsWith("`") && part.endsWith("`")) {
+            return (
+                <code key={i} className="bg-purple-100 dark:bg-purple-950/80 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded text-[11px] font-mono border border-purple-200 dark:border-purple-800/60 mx-0.5">
+                    {part.slice(1, -1)}
+                </code>
+            );
+        }
+        return part;
+    });
+}
+
 export default function AIAssistant({ semester, subject, note }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [prompt, setPrompt] = useState("");
@@ -72,14 +185,14 @@ export default function AIAssistant({ semester, subject, note }: Props) {
                 <Sparkles size={16} className="animate-pulse text-yellow-300" />
                 <span>Ask AI Tutor</span>
                 <span className="hidden sm:inline-block rounded-full bg-white/20 px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider">
-                    Gemini 1.5
+                    Gemini 2.0
                 </span>
             </button>
 
             {/* Modal / Slide-over Drawer */}
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
-                    <div className="relative flex flex-col w-full max-w-2xl h-[85vh] max-h-[700px] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <div className="relative flex flex-col w-full max-w-3xl h-[88vh] max-h-[750px] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                         
                         {/* Drawer Header */}
                         <div className="flex items-center justify-between px-6 py-4 bg-slate-50 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-800">
@@ -157,13 +270,13 @@ export default function AIAssistant({ semester, subject, note }: Props) {
 
                             {response && !loading && (
                                 <div className="space-y-4">
-                                    <div className="flex items-start justify-between gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
-                                        <div className="flex gap-3 text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed overflow-x-auto w-full">
+                                    <div className="flex items-start justify-between gap-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                                        <div className="flex gap-3 text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed w-full">
                                             <div className="flex-shrink-0 h-7 w-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-xs mt-0.5">
                                                 AI
                                             </div>
-                                            <div className="flex-1 whitespace-pre-wrap font-sans">
-                                                {response}
+                                            <div className="flex-1 font-sans">
+                                                {renderFormattedContent(response)}
                                             </div>
                                         </div>
 
