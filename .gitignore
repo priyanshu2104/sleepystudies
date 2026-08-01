@@ -34,4 +34,6 @@ backend/images/
 # Temporary upload buffer
 backend/temp_uploads/
 **/backend/temp_uploads/
+backend/temp_decrypted/
+**/backend/temp_decrypted/
 
